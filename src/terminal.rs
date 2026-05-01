@@ -52,6 +52,27 @@ impl Terminal {
         })
     }
 
+    /// Borrow stdout WITHOUT taking ownership of terminal lifecycle.
+    ///
+    /// Use this when something else (a `kura_ghostty::TerminalRestoreGuard`,
+    /// a hand-rolled `enable_raw_mode`+`EnterAlternateScreen` pair, an
+    /// embedded TUI inside a larger app, etc.) already owns raw-mode +
+    /// alt-screen lifecycle. The returned `Terminal` is a thin wrapper —
+    /// drop is a no-op (it neither disables raw mode nor leaves the
+    /// alternate screen).
+    ///
+    /// Call this when you need [`crate::draw`] drawers but the caller is
+    /// the lifecycle authority. If you want egaku-term to own lifecycle,
+    /// use [`Terminal::enter`] instead.
+    pub fn borrow_stdout() -> Self {
+        Self {
+            out: stdout(),
+            raw_enabled: false,
+            alt_screen: false,
+            cursor_hidden: false,
+        }
+    }
+
     /// Borrow the underlying `Stdout` mutably. Drawers in [`crate::draw`]
     /// use this to queue crossterm commands.
     pub fn out(&mut self) -> &mut Stdout {
