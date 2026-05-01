@@ -66,10 +66,16 @@ pub mod keymap;
 pub mod terminal;
 pub mod theme;
 
+#[cfg(feature = "tokio")]
+pub mod app_async;
+
 pub use app::{App, run};
 pub use error::{Error, Result};
 pub use event::from_crossterm;
 pub use terminal::Terminal;
+
+#[cfg(feature = "tokio")]
+pub use app_async::{AsyncApp, run_async};
 
 // Re-export crossterm so downstream crates don't have to track its version
 // independently. They get the exact crossterm we render against.

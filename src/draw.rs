@@ -436,6 +436,221 @@ pub fn header_with(
     Ok(())
 }
 
+// ---------- Paragraph (multiline text with word wrap) -----------------------
+
+/// Word-wrap `text` to fit `width` columns. Lines that contain a word
+/// longer than `width` are broken at the column boundary. Empty input
+/// returns an empty Vec; explicit `\n`s are honored as paragraph breaks.
+#[must_use]
+pub fn wrap_text(text: &str, width: u16) -> Vec<String> {
+    if width == 0 {
+        return Vec::new();
+    }
+    let max = usize::from(width);
+    let mut out = Vec::new();
+    for raw_line in text.split('\n') {
+        if raw_line.is_empty() {
+            out.push(String::new());
+            continue;
+        }
+        let mut current = String::new();
+        let mut cur_w = 0usize;
+        for word in raw_line.split_whitespace() {
+            let w = word.width();
+            if w > max {
+                // Word longer than the line — flush current, then break the
+                // word at column boundaries.
+                if !current.is_empty() {
+                    out.push(std::mem::take(&mut current));
+                    cur_w = 0;
+                }
+                let mut chunk = String::new();
+                let mut chunk_w = 0usize;
+                for ch in word.chars() {
+                    let cw = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+                    if chunk_w + cw > max && !chunk.is_empty() {
+                        out.push(std::mem::take(&mut chunk));
+                        chunk_w = 0;
+                    }
+                    chunk.push(ch);
+                    chunk_w += cw;
+                }
+                if !chunk.is_empty() {
+                    out.push(chunk);
+                }
+                continue;
+            }
+            let needed = if current.is_empty() { w } else { cur_w + 1 + w };
+            if needed > max {
+                out.push(std::mem::take(&mut current));
+                cur_w = 0;
+            }
+            if !current.is_empty() {
+                current.push(' ');
+                cur_w += 1;
+            }
+            current.push_str(word);
+            cur_w += w;
+        }
+        if !current.is_empty() || raw_line.chars().all(char::is_whitespace) {
+            out.push(current);
+        }
+    }
+    out
+}
+
+/// Render a multi-line paragraph inside `rect`, word-wrapped to the rect
+/// width and truncated to the rect height. Lines longer than the height
+/// are dropped — callers that want scrolling pair this with an
+/// [`egaku::ScrollView`] and offset their input.
+pub fn paragraph(term: &mut Terminal, rect: Rect, text: &str) -> Result<()> {
+    paragraph_with(term, rect, text, &Palette::default())
+}
+
+/// Like [`paragraph`] but with an explicit palette.
+pub fn paragraph_with(
+    term: &mut Terminal,
+    rect: Rect,
+    text: &str,
+    palette: &Palette,
+) -> Result<()> {
+    let (x, y, w, h) = to_cell_rect(rect);
+    if w == 0 || h == 0 {
+        return Ok(());
+    }
+    term.out().queue(SetForegroundColor(palette.foreground))?;
+    for (i, line) in wrap_text(text, w).iter().enumerate().take(usize::from(h)) {
+        let row_idx = u16::try_from(i).unwrap_or(u16::MAX);
+        print_at(term, x, y + row_idx, w, line)?;
+    }
+    term.out().queue(ResetColor)?;
+    Ok(())
+}
+
+// ---------- BorderedBlock (titled box wrapping a child rect) ----------------
+
+/// Rectangle inset where a [`bordered_block`]'s child content should
+/// render. Returns the inner rect (border subtracted) for downstream
+/// drawers to use as their target.
+///
+/// The border occupies the outermost ring of `rect`; the inner rect is
+/// `rect` with `(x+1, y+1, w-2, h-2)`.
+#[must_use]
+pub fn block_inner(rect: Rect) -> Rect {
+    let inner_w = (rect.width - 2.0).max(0.0);
+    let inner_h = (rect.height - 2.0).max(0.0);
+    Rect::new(rect.x + 1.0, rect.y + 1.0, inner_w, inner_h)
+}
+
+/// Render a single-line border around `rect` with `title` embedded in the
+/// top edge. The interior is left untouched — call this BEFORE drawing
+/// child widgets, then draw children into [`block_inner(rect)`].
+///
+/// `focused` toggles the border color between accent (focused) and border
+/// (unfocused).
+pub fn bordered_block(
+    term: &mut Terminal,
+    rect: Rect,
+    title: &str,
+    focused: bool,
+) -> Result<()> {
+    bordered_block_with(term, rect, title, focused, &Palette::default())
+}
+
+/// Like [`bordered_block`] but with an explicit palette.
+pub fn bordered_block_with(
+    term: &mut Terminal,
+    rect: Rect,
+    title: &str,
+    focused: bool,
+    palette: &Palette,
+) -> Result<()> {
+    let (x, y, w, h) = to_cell_rect(rect);
+    if w < 2 || h < 2 {
+        return Ok(());
+    }
+    let color = if focused {
+        palette.accent
+    } else {
+        palette.border
+    };
+    term.out().queue(SetForegroundColor(color))?;
+
+    // Top: ┌─ title ─...─┐
+    let title_part = if title.is_empty() {
+        String::new()
+    } else {
+        format!(" {title} ")
+    };
+    let title_w = u16::try_from(title_part.width()).unwrap_or(0).min(w - 2);
+    let dashes_total = w - 2 - title_w;
+    let top = format!(
+        "┌{}{}{}┐",
+        title_part.chars().take(usize::from(title_w)).collect::<String>(),
+        if title_w > 0 && dashes_total > 0 { "" } else { "" },
+        "─".repeat(usize::from(dashes_total)),
+    );
+    print_at(term, x, y, w, &top)?;
+
+    // Middle rows: │   ...   │  (don't paint the interior — caller does)
+    for r in 1..(h - 1) {
+        print_at(term, x, y + r, 1, "│")?;
+        print_at(term, x + w - 1, y + r, 1, "│")?;
+    }
+
+    // Bottom: └────...────┘
+    let bottom = format!("└{}┘", "─".repeat(usize::from(w - 2)));
+    print_at(term, x, y + h - 1, w, &bottom)?;
+
+    term.out().queue(ResetColor)?;
+    Ok(())
+}
+
+// ---------- StatusLine (left + spacer + right tri-section) ------------------
+
+/// Render a single-row status bar: `left` text flush-left, `right` text
+/// flush-right, padding between them. Uses the palette's `selection`
+/// background for the bar so it visually separates from the content above
+/// and below.
+///
+/// If both segments together exceed the rect width, the right segment is
+/// truncated first (left is the "current state" usually authored by the
+/// app and more important to keep readable).
+pub fn status_line(term: &mut Terminal, rect: Rect, left: &str, right: &str) -> Result<()> {
+    status_line_with(term, rect, left, right, &Palette::default())
+}
+
+/// Like [`status_line`] but with an explicit palette.
+pub fn status_line_with(
+    term: &mut Terminal,
+    rect: Rect,
+    left: &str,
+    right: &str,
+    palette: &Palette,
+) -> Result<()> {
+    let (x, y, w, _h) = to_cell_rect(rect);
+    if w == 0 {
+        return Ok(());
+    }
+    let left_str = truncate_to_width(left, w);
+    let left_w = u16::try_from(left_str.width()).unwrap_or(w).min(w);
+
+    let right_budget = w - left_w;
+    let right_str = truncate_to_width(right, right_budget);
+    let right_w = u16::try_from(right_str.width()).unwrap_or(0);
+
+    let pad_w = w - left_w - right_w;
+    let pad = " ".repeat(usize::from(pad_w));
+
+    term.out()
+        .queue(SetBackgroundColor(palette.selection))?
+        .queue(SetForegroundColor(palette.foreground))?
+        .queue(MoveTo(x, y))?
+        .queue(Print(format!("{left_str}{pad}{right_str}")))?
+        .queue(ResetColor)?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -468,5 +683,42 @@ mod tests {
     fn to_cell_rect_clamps_negative() {
         let (x, y, _, _) = to_cell_rect(Rect::new(-5.0, -1.0, 10.0, 4.0));
         assert_eq!((x, y), (0, 0));
+    }
+
+    #[test]
+    fn wrap_text_simple() {
+        let lines = wrap_text("the quick brown fox jumps", 10);
+        assert_eq!(lines, vec!["the quick", "brown fox", "jumps"]);
+    }
+
+    #[test]
+    fn wrap_text_zero_width() {
+        assert!(wrap_text("anything", 0).is_empty());
+    }
+
+    #[test]
+    fn wrap_text_preserves_paragraph_breaks() {
+        let lines = wrap_text("first line\n\nsecond line", 20);
+        assert_eq!(lines, vec!["first line".to_string(), String::new(), "second line".to_string()]);
+    }
+
+    #[test]
+    fn wrap_text_breaks_oversized_word() {
+        let lines = wrap_text("aaaaaaaa word", 4);
+        // "aaaaaaaa" is 8 wide; gets broken into "aaaa","aaaa", then "word"
+        assert_eq!(lines, vec!["aaaa", "aaaa", "word"]);
+    }
+
+    #[test]
+    fn block_inner_subtracts_border() {
+        let inner = block_inner(Rect::new(0.0, 0.0, 10.0, 5.0));
+        assert_eq!(inner, Rect::new(1.0, 1.0, 8.0, 3.0));
+    }
+
+    #[test]
+    fn block_inner_zero_floor() {
+        let inner = block_inner(Rect::new(0.0, 0.0, 1.0, 1.0));
+        assert_eq!(inner.width, 0.0);
+        assert_eq!(inner.height, 0.0);
     }
 }

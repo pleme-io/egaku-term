@@ -44,15 +44,16 @@ cargo test
 
 ## Architecture
 
-| Module     | Surface                                                                              |
-|------------|--------------------------------------------------------------------------------------|
-| `terminal` | `Terminal::enter()` + Drop-safe restore                                              |
-| `event`    | `from_crossterm(Event) -> Option<KeyCombo>`, `key!` macro                            |
-| `keymap`   | `keymap!` declarative macro                                                          |
-| `theme`    | `Palette::from_theme(&egaku::Theme)` — RGBA → crossterm `Color`                      |
-| `draw`     | drawers for `ListView`, `TextInput`, `TabBar`, `Modal`, `ScrollView`, `SplitPane`    |
-| `app`      | `App` trait + `run()` runtime                                                        |
-| `error`    | `Error`/`Result`                                                                     |
+| Module       | Surface                                                                              |
+|--------------|--------------------------------------------------------------------------------------|
+| `terminal`   | `Terminal::enter()` + Drop-safe restore                                              |
+| `event`      | `from_crossterm(Event) -> Option<KeyCombo>`, `key!` macro                            |
+| `keymap`     | `keymap!` declarative macro                                                          |
+| `theme`      | `Palette::from_theme(&egaku::Theme)` — RGBA → crossterm `Color`                      |
+| `draw`       | `header` / `list` / `text_input` / `tabs` / `modal` / `scrollbar` / `split` / `paragraph` / `bordered_block` / `status_line` |
+| `app`        | sync `App` trait + `run()` runtime                                                   |
+| `app_async` (feature `tokio`) | async `AsyncApp` trait + `run_async()` over `crossterm::EventStream` |
+| `error`      | `Error`/`Result`                                                                     |
 
 Re-exports `crossterm` so consumers don't have to track its version
 independently.

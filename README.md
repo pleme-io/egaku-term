@@ -82,11 +82,38 @@ fn main() -> Result<()> {
 | `event`       | `from_crossterm(Event) -> Option<KeyCombo>`, `key!` macro                            |
 | `keymap`      | `keymap!` declarative macro                                                          |
 | `theme`       | `Palette::from_theme(&egaku::Theme)` — RGBA → crossterm `Color`                      |
-| `draw`        | drawers for `ListView`, `TextInput`, `TabBar`, `Modal`, `ScrollView`, `SplitPane`    |
-| `app`         | `App` trait + `run()` runtime                                                        |
+| `draw`        | `header`/`list`/`text_input`/`tabs`/`modal`/`scrollbar`/`split` + `paragraph`/`bordered_block`/`status_line` |
+| `app`         | sync `App` trait + `run()` runtime                                                   |
+| `app_async` *(feature `tokio`)* | async `AsyncApp` trait + `run_async()` runtime |
 
 Re-exports `crossterm` so consumers don't have to track its version
 independently.
+
+## Sync vs async
+
+Two runtimes ship side by side:
+
+```rust
+// Sync — no tokio dependency.
+use egaku_term::{App, run};
+run(&mut my_app)?;
+
+// Async — gated behind feature `tokio`.
+use egaku_term::{AsyncApp, run_async};
+run_async(&mut my_app).await?;
+```
+
+Pick `App` for one-shot wizards (alicerce-ui, picker scripts) and the
+sync side has zero async deps. Pick `AsyncApp` when the app multiplexes
+streams (chat clients, agentic loops, IMAP, MCP) — `run_async` drives
+`crossterm::event::EventStream` so awaiting between events doesn't block
+other tokio tasks.
+
+```toml
+# Cargo.toml — pick one
+egaku-term = { git = "https://github.com/pleme-io/egaku-term" }                          # sync
+egaku-term = { git = "https://github.com/pleme-io/egaku-term", features = ["tokio"] }    # async
+```
 
 ## Macros
 
