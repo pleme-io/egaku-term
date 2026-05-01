@@ -1,0 +1,28 @@
+[package]
+name = "egaku-term"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89.0"
+description = "Egaku-Term — terminal renderer + runtime for egaku widget state machines (crossterm-backed)"
+homepage = "https://github.com/pleme-io/egaku-term"
+repository = "https://github.com/pleme-io/egaku-term"
+documentation = "https://docs.rs/egaku-term"
+readme = "README.md"
+license = "MIT"
+categories = ["command-line-interface", "gui"]
+keywords = ["tui", "terminal", "widgets", "egaku", "crossterm"]
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+
+[dependencies]
+egaku = { git = "https://github.com/pleme-io/egaku" }
+crossterm = "0.28"
+thiserror = "2"
+unicode-width = "0.2"
+
+[dev-dependencies]
+serde_json = "1"
