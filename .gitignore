@@ -2,3 +2,4 @@
 /result
 /.direnv
 Cargo.lock
+Cargo.build-spec.json
