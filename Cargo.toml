@@ -24,7 +24,7 @@ default = []
 tokio = ["dep:tokio", "dep:futures-util", "crossterm/event-stream"]
 
 [dependencies]
-egaku = { git = "https://github.com/pleme-io/egaku" }
+egaku = { git = "https://github.com/pleme-io/egaku" , version = "0.1" }
 crossterm = "0.28"
 thiserror = "2"
 unicode-width = "0.2"
