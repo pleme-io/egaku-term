@@ -92,7 +92,7 @@
           "windows"
         ]
       },
-      "egaku-0.1.0": {
+      "egaku-0.1.0-d474b1ef31aa22244c9fd5b2c8cfd287870cdf27": {
         "runtime_dependencies": [
           {
             "name": "serde",
@@ -164,7 +164,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.0",
+            "package_key": "egaku-0.1.0-d474b1ef31aa22244c9fd5b2c8cfd287870cdf27",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1566,7 +1566,7 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.0": {
+    "egaku-0.1.0-d474b1ef31aa22244c9fd5b2c8cfd287870cdf27": {
       "edition": "2024"
     },
     "egaku-term-0.2.1": {
@@ -1585,6 +1585,9 @@
     "libc-0.2.186": {
       "edition": "2021",
       "build_script": "build.rs"
+    },
+    "linux-raw-sys-0.4.15": {
+      "edition": "2021"
     },
     "lock_api-0.4.14": {
       "edition": "2021"
@@ -1695,13 +1698,10 @@
     "zmij-1.0.21": {
       "edition": "2021",
       "build_script": "build.rs"
-    },
-    "linux-raw-sys-0.4.15": {
-      "edition": "2021"
     }
   },
   "git_nar_sha256": {
-    "egaku-0.1.0": "sha256-IHsdbipeAWHeJMr3+/SABJjpfg9zdRYrTNQ0KJghyQM="
+    "egaku-0.1.0-d474b1ef31aa22244c9fd5b2c8cfd287870cdf27": "sha256-IHsdbipeAWHeJMr3+/SABJjpfg9zdRYrTNQ0KJghyQM="
   },
   "flake_metadata": {}
 }
