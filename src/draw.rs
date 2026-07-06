@@ -1,23 +1,20 @@
-//! Drawers for [`egaku`] widgets onto a terminal.
+//! Drawers for [`egaku`] widgets onto a [`Buffer`].
 //!
 //! Every drawer takes the widget by reference, a [`Rect`](egaku::Rect)
 //! describing where to render (in cell coordinates — `1.0 == one terminal
 //! cell`), a [`Palette`](crate::theme::Palette) for colors, and a `focused`
-//! flag so widgets can dim when inactive. Drawers queue commands onto the
-//! terminal but do not flush — the caller flushes once per frame.
+//! flag so widgets can dim when inactive. Drawers write typed
+//! [`Cell`](crate::cell::Cell)s into the back [`Buffer`] via the buffer's typed
+//! ops ([`Buffer::set_stringn`], [`Buffer::set_char`], [`Buffer::blank`],
+//! [`Buffer::hline`]) — no drawer builds a styled string by hand or spells an
+//! escape sequence (★★ TYPED EMISSION / Quadro P5). The runtime diffs the
+//! buffer against the previous frame and flushes only the changed cells.
 
-use crossterm::{
-    QueueableCommand,
-    cursor::MoveTo,
-    style::{
-        Attribute, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
-    },
-};
 use egaku::{ListView, Modal, Rect, ScrollView, SplitPane, TabBar, TextInput};
 use unicode_width::UnicodeWidthStr;
 
-use crate::error::Result;
-use crate::terminal::Terminal;
+use crate::buffer::Buffer;
+use crate::cell::Style;
 use crate::theme::Palette;
 
 /// Convert egaku's `f32` rect into integer terminal coordinates.
@@ -56,173 +53,139 @@ fn truncate_to_width(s: &str, max_cols: u16) -> String {
     out
 }
 
-/// Print a single line at `(col, row)` truncated to `max_cols`. The cursor
-/// is left at the end of the printed run; callers shouldn't depend on that.
-fn print_at(term: &mut Terminal, col: u16, row: u16, max_cols: u16, text: &str) -> Result<()> {
-    let line = truncate_to_width(text, max_cols);
-    term.out().queue(MoveTo(col, row))?.queue(Print(line))?;
-    Ok(())
-}
-
 // ---------- ListView ---------------------------------------------------------
 
 /// Render a [`ListView`] inside `rect`. Selected row is rendered with the
 /// palette's selection background; a `▶ ` gutter glyph marks it on focused
 /// lists, and a 2-space gutter is reserved on unfocused lists for visual
 /// stability.
-pub fn list(term: &mut Terminal, rect: Rect, list: &ListView, focused: bool) -> Result<()> {
-    list_with(term, rect, list, focused, &Palette::default())
+pub fn list(buf: &mut Buffer, rect: Rect, list: &ListView, focused: bool) {
+    list_with(buf, rect, list, focused, &Palette::default());
 }
 
 /// Like [`list`] but with an explicit palette.
-pub fn list_with(
-    term: &mut Terminal,
-    rect: Rect,
-    list: &ListView,
-    focused: bool,
-    palette: &Palette,
-) -> Result<()> {
+pub fn list_with(buf: &mut Buffer, rect: Rect, list: &ListView, focused: bool, palette: &Palette) {
     let (x, y, w, h) = to_cell_rect(rect);
     if w == 0 || h == 0 {
-        return Ok(());
+        return;
     }
 
     let visible = list.visible_items();
     let offset = list.offset();
-    for (i, item) in visible.iter().enumerate() {
-        let row_idx = u16::try_from(i).unwrap_or(u16::MAX);
+    for (idx, item) in visible.iter().enumerate() {
+        let row_idx = u16::try_from(idx).unwrap_or(u16::MAX);
         if row_idx >= h {
             break;
         }
-        let absolute_idx = offset + i;
-        let is_selected = absolute_idx == list.selected_index();
+        let row = y + row_idx;
+        let is_selected = offset + idx == list.selected_index();
 
-        let prefix = if is_selected { "▶ " } else { "  " };
-        let line = format!("{prefix}{item}");
-
-        if is_selected {
-            term.out()
-                .queue(SetBackgroundColor(palette.selection))?
-                .queue(SetForegroundColor(palette.foreground))?;
+        let (style, prefix) = if is_selected {
+            let mut sel = Style::default()
+                .fg(palette.foreground)
+                .bg(palette.selection);
             if focused {
-                term.out().queue(SetAttribute(Attribute::Bold))?;
+                sel = sel.bold();
             }
-        }
+            (sel, "▶ ")
+        } else {
+            (Style::default(), "  ")
+        };
 
-        print_at(term, x, y + row_idx, w, &line)?;
-
-        // Pad selected row to full width for a clean highlight bar.
         if is_selected {
-            let used = u16::try_from(line.width()).unwrap_or(w).min(w);
-            if used < w {
-                term.out().queue(Print(" ".repeat(usize::from(w - used))))?;
-            }
-            term.out().queue(ResetColor)?.queue(SetAttribute(Attribute::Reset))?;
+            // Paint the full-width highlight bar first so the padding to the
+            // right of the text carries the selection background.
+            buf.blank(x, row, w, style);
         }
+        let end = buf.set_stringn(x, row, prefix, w, style);
+        let remaining = x.saturating_add(w).saturating_sub(end);
+        buf.set_stringn(end, row, item, remaining, style);
     }
-
-    Ok(())
 }
 
 // ---------- TextInput --------------------------------------------------------
 
-/// Render a [`TextInput`] on a single row of `rect`. When `focused`, the
-/// cursor block is drawn at the input's cursor position; otherwise a dim
-/// underline is drawn below the visible text.
-pub fn text_input(term: &mut Terminal, rect: Rect, input: &TextInput, focused: bool) -> Result<()> {
-    text_input_with(term, rect, input, focused, &Palette::default())
+/// Render a [`TextInput`] on a single row of `rect`. When `focused`, a
+/// reverse-video block cursor is drawn at the input's cursor position;
+/// otherwise the text is drawn dim.
+pub fn text_input(buf: &mut Buffer, rect: Rect, input: &TextInput, focused: bool) {
+    text_input_with(buf, rect, input, focused, &Palette::default());
 }
 
 /// Like [`text_input`] but with an explicit palette.
 pub fn text_input_with(
-    term: &mut Terminal,
+    buf: &mut Buffer,
     rect: Rect,
     input: &TextInput,
     focused: bool,
     palette: &Palette,
-) -> Result<()> {
+) {
     let (x, y, w, _h) = to_cell_rect(rect);
     if w == 0 {
-        return Ok(());
+        return;
     }
 
     let text = input.text();
-    let visible = truncate_to_width(text, w);
-
-    if focused {
-        term.out().queue(SetForegroundColor(palette.foreground))?;
+    let fg = if focused {
+        palette.foreground
     } else {
-        term.out().queue(SetForegroundColor(palette.muted))?;
-    }
-    term.out().queue(MoveTo(x, y))?.queue(Print(&visible))?;
+        palette.muted
+    };
+    let style = Style::default().fg(fg);
+    buf.set_stringn(x, y, text, w, style);
 
     if focused {
-        // Block-style cursor: redraw the byte at cursor with reverse attr.
+        // Block-style cursor: redraw the glyph at the cursor with reverse attr.
         let cursor_byte = input.cursor();
         let prefix_width = u16::try_from(text[..cursor_byte.min(text.len())].width()).unwrap_or(0);
         let cursor_col = x + prefix_width.min(w.saturating_sub(1));
-        let cursor_glyph = text[cursor_byte..]
-            .chars()
-            .next()
-            .map_or(' ', |c| c);
-        term.out()
-            .queue(MoveTo(cursor_col, y))?
-            .queue(SetAttribute(Attribute::Reverse))?
-            .queue(Print(cursor_glyph))?
-            .queue(SetAttribute(Attribute::Reset))?;
+        let cursor_glyph = text[cursor_byte..].chars().next().unwrap_or(' ');
+        let cursor_style = Style::default().fg(fg).reversed();
+        buf.set_char(cursor_col, y, cursor_glyph, cursor_style);
     }
-    term.out().queue(ResetColor)?;
-    Ok(())
 }
 
 // ---------- TabBar -----------------------------------------------------------
 
 /// Render a [`TabBar`] as a single row of `[ tab ]  [ tab ]  ...`. The
 /// active tab is reverse-video; a focused bar bolds it.
-pub fn tabs(term: &mut Terminal, rect: Rect, bar: &TabBar, focused: bool) -> Result<()> {
-    tabs_with(term, rect, bar, focused, &Palette::default())
+pub fn tabs(buf: &mut Buffer, rect: Rect, bar: &TabBar, focused: bool) {
+    tabs_with(buf, rect, bar, focused, &Palette::default());
 }
 
 /// Like [`tabs`] but with an explicit palette.
-pub fn tabs_with(
-    term: &mut Terminal,
-    rect: Rect,
-    bar: &TabBar,
-    focused: bool,
-    palette: &Palette,
-) -> Result<()> {
+pub fn tabs_with(buf: &mut Buffer, rect: Rect, bar: &TabBar, focused: bool, palette: &Palette) {
     let (x, y, w, _h) = to_cell_rect(rect);
     if w == 0 {
-        return Ok(());
+        return;
     }
 
     let mut col: u16 = 0;
     for (i, name) in bar.tabs().iter().enumerate() {
-        let label = format!(" {name} ");
-        let label_w = u16::try_from(label.width()).unwrap_or(w);
+        // Label is " {name} " — one pad cell on each side.
+        let name_w = u16::try_from(name.width()).unwrap_or(w);
+        let label_w = name_w.saturating_add(2);
         if col + label_w + 1 > w {
             break;
         }
 
         let is_active = i == bar.active_index();
-        if is_active {
-            term.out()
-                .queue(SetBackgroundColor(palette.accent))?
-                .queue(SetForegroundColor(palette.background))?;
+        let style = if is_active {
+            let mut s = Style::default().bg(palette.accent).fg(palette.background);
             if focused {
-                term.out().queue(SetAttribute(Attribute::Bold))?;
+                s = s.bold();
             }
+            s
         } else {
-            term.out().queue(SetForegroundColor(palette.muted))?;
-        }
-        term.out()
-            .queue(MoveTo(x + col, y))?
-            .queue(Print(&label))?
-            .queue(ResetColor)?
-            .queue(SetAttribute(Attribute::Reset))?;
-        col += label_w + 1; // +1 spacer
+            Style::default().fg(palette.muted)
+        };
+
+        let start = x + col;
+        // Paint the pad cells + background, then the label glyphs over them.
+        buf.blank(start, y, label_w, style);
+        buf.set_stringn(start + 1, y, name, name_w, style);
+        col += label_w + 1; // +1 spacer between tabs
     }
-    Ok(())
 }
 
 // ---------- Modal ------------------------------------------------------------
@@ -230,29 +193,18 @@ pub fn tabs_with(
 /// Render a [`Modal`] centered inside `bounds`. Skips entirely when the
 /// modal is not visible, so callers can call this unconditionally each
 /// frame. The body is supplied as a slice of pre-wrapped lines.
-pub fn modal(
-    term: &mut Terminal,
-    bounds: Rect,
-    modal: &Modal,
-    body: &[&str],
-) -> Result<()> {
-    modal_with(term, bounds, modal, body, &Palette::default())
+pub fn modal(buf: &mut Buffer, bounds: Rect, modal: &Modal, body: &[&str]) {
+    modal_with(buf, bounds, modal, body, &Palette::default());
 }
 
 /// Like [`modal`] but with an explicit palette.
-pub fn modal_with(
-    term: &mut Terminal,
-    bounds: Rect,
-    modal: &Modal,
-    body: &[&str],
-    palette: &Palette,
-) -> Result<()> {
+pub fn modal_with(buf: &mut Buffer, bounds: Rect, modal: &Modal, body: &[&str], palette: &Palette) {
     if !modal.is_visible() {
-        return Ok(());
+        return;
     }
     let (bx, by, bw, bh) = to_cell_rect(bounds);
     if bw < 6 || bh < 4 {
-        return Ok(());
+        return;
     }
 
     // Compute box size: at most 80% of bounds, at least enough for the
@@ -264,49 +216,56 @@ pub fn modal_with(
 
     let box_w = u16::try_from(want_w).unwrap_or(bw).min(bw * 4 / 5);
     let box_h = u16::try_from(want_h).unwrap_or(bh).min(bh * 4 / 5);
+    if box_w < 2 || box_h < 2 {
+        return;
+    }
     let box_x = bx + (bw.saturating_sub(box_w)) / 2;
     let box_y = by + (bh.saturating_sub(box_h)) / 2;
+    let right = box_x + box_w - 1;
+    let inner = box_w - 2; // cells between the two corner columns
 
-    term.out()
-        .queue(SetForegroundColor(palette.border))?
-        .queue(SetBackgroundColor(palette.background))?;
+    let style = Style::default().fg(palette.border).bg(palette.background);
 
-    // Top border with title
-    let title = format!("─ {} ", modal.title());
-    let title_w_u = u16::try_from(title.width()).unwrap_or(box_w);
-    let pad = box_w
-        .saturating_sub(2)
-        .saturating_sub(title_w_u);
-    let top = format!("┌{title}{}┐", "─".repeat(usize::from(pad)));
-    print_at(term, box_x, box_y, box_w, &top)?;
+    // Fill the whole box with the modal background first.
+    for r in 0..box_h {
+        buf.blank(box_x, box_y + r, box_w, style);
+    }
 
-    // Body rows
+    // Top border: ┌─ title ─...─┐
+    buf.hline(box_x + 1, box_y, inner, '─', style);
+    buf.set_char(box_x, box_y, '┌', style);
+    buf.set_char(right, box_y, '┐', style);
+    if inner >= 3 {
+        let mut cx = box_x + 1;
+        cx = buf.set_stringn(cx, box_y, "─ ", inner, style);
+        let title_budget = right.saturating_sub(cx).saturating_sub(1);
+        cx = buf.set_stringn(cx, box_y, modal.title(), title_budget, style);
+        if cx < right {
+            buf.set_char(cx, box_y, ' ', style);
+        }
+    }
+
+    // Side borders on every interior row.
+    for r in 1..(box_h - 1) {
+        buf.set_char(box_x, box_y + r, '│', style);
+        buf.set_char(right, box_y + r, '│', style);
+    }
+
+    // Body rows: 1-cell left pad, clipped to the interior width.
+    let content_budget = inner.saturating_sub(2);
     for (i, line) in body.iter().enumerate() {
         let row_idx = u16::try_from(i + 1).unwrap_or(u16::MAX);
         if row_idx >= box_h - 1 {
             break;
         }
-        let inner_w = box_w.saturating_sub(2);
-        let truncated = truncate_to_width(line, inner_w.saturating_sub(2));
-        let used = u16::try_from(truncated.width()).unwrap_or(0);
-        let pad_right = inner_w.saturating_sub(used + 2);
-        let row = format!("│ {truncated}{} │", " ".repeat(usize::from(pad_right)));
-        print_at(term, box_x, box_y + row_idx, box_w, &row)?;
+        buf.set_stringn(box_x + 2, box_y + row_idx, line, content_budget, style);
     }
 
-    // Fill remaining body rows with empty interior.
-    for r in (body.len() + 1)..usize::from(box_h - 1) {
-        let row = format!("│{}│", " ".repeat(usize::from(box_w - 2)));
-        let row_idx = u16::try_from(r).unwrap_or(u16::MAX);
-        print_at(term, box_x, box_y + row_idx, box_w, &row)?;
-    }
-
-    // Bottom border
-    let bottom = format!("└{}┘", "─".repeat(usize::from(box_w - 2)));
-    print_at(term, box_x, box_y + box_h - 1, box_w, &bottom)?;
-
-    term.out().queue(ResetColor)?;
-    Ok(())
+    // Bottom border.
+    let bottom = box_y + box_h - 1;
+    buf.hline(box_x + 1, bottom, inner, '─', style);
+    buf.set_char(box_x, bottom, '└', style);
+    buf.set_char(right, bottom, '┘', style);
 }
 
 // ---------- ScrollView indicator --------------------------------------------
@@ -314,31 +273,25 @@ pub fn modal_with(
 /// Render a one-column scroll indicator on the right edge of `rect`. The
 /// thumb's relative position reflects [`ScrollView::scroll_fraction`]; the
 /// thumb size reflects the viewport-to-content ratio.
-pub fn scrollbar(term: &mut Terminal, rect: Rect, scroll: &ScrollView) -> Result<()> {
-    scrollbar_with(term, rect, scroll, &Palette::default())
+pub fn scrollbar(buf: &mut Buffer, rect: Rect, scroll: &ScrollView) {
+    scrollbar_with(buf, rect, scroll, &Palette::default());
 }
 
 /// Like [`scrollbar`] but with an explicit palette.
-pub fn scrollbar_with(
-    term: &mut Terminal,
-    rect: Rect,
-    scroll: &ScrollView,
-    palette: &Palette,
-) -> Result<()> {
+pub fn scrollbar_with(buf: &mut Buffer, rect: Rect, scroll: &ScrollView, palette: &Palette) {
     let (x, y, w, h) = to_cell_rect(rect);
     if w == 0 || h == 0 {
-        return Ok(());
+        return;
     }
     let col = x + w - 1;
+    let style = Style::default().fg(palette.muted);
 
     if scroll.max_scroll() <= 0.0 {
         // No scrolling needed — draw the gutter dim for visual consistency.
-        term.out().queue(SetForegroundColor(palette.muted))?;
         for r in 0..h {
-            print_at(term, col, y + r, 1, "│")?;
+            buf.set_char(col, y + r, '│', style);
         }
-        term.out().queue(ResetColor)?;
-        return Ok(());
+        return;
     }
 
     #[allow(
@@ -354,17 +307,14 @@ pub fn scrollbar_with(
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let thumb_top = (scroll.scroll_fraction() * f32::from(scrollable_h)).round() as u16;
 
-    term.out().queue(SetForegroundColor(palette.muted))?;
     for r in 0..h {
         let glyph = if r >= thumb_top && r < thumb_top + thumb_size {
-            "█"
+            '█'
         } else {
-            "│"
+            '│'
         };
-        print_at(term, col, y + r, 1, glyph)?;
+        buf.set_char(col, y + r, glyph, style);
     }
-    term.out().queue(ResetColor)?;
-    Ok(())
 }
 
 // ---------- SplitPane border -------------------------------------------------
@@ -372,68 +322,50 @@ pub fn scrollbar_with(
 /// Render the divider line between a [`SplitPane`]'s two children inside
 /// `bounds`. Children themselves render via the panes' [`SplitPane::first_rect`]
 /// / [`SplitPane::second_rect`] coordinates.
-pub fn split(term: &mut Terminal, bounds: Rect, split: &SplitPane) -> Result<()> {
-    split_with(term, bounds, split, &Palette::default())
+pub fn split(buf: &mut Buffer, bounds: Rect, split: &SplitPane) {
+    split_with(buf, bounds, split, &Palette::default());
 }
 
 /// Like [`split`] but with an explicit palette.
-pub fn split_with(
-    term: &mut Terminal,
-    bounds: Rect,
-    split: &SplitPane,
-    palette: &Palette,
-) -> Result<()> {
+pub fn split_with(buf: &mut Buffer, bounds: Rect, split: &SplitPane, palette: &Palette) {
     let first = split.first_rect(&bounds);
     let (fx, fy, fw, fh) = to_cell_rect(first);
     if fw == 0 || fh == 0 {
-        return Ok(());
+        return;
     }
-    term.out().queue(SetForegroundColor(palette.border))?;
+    let style = Style::default().fg(palette.border);
     match split.orientation() {
         egaku::Orientation::Horizontal => {
-            // Vertical line at the right edge of `first`
+            // Vertical line at the right edge of `first`.
             let col = fx + fw;
             for r in 0..fh {
-                print_at(term, col, fy + r, 1, "│")?;
+                buf.set_char(col, fy + r, '│', style);
             }
         }
         egaku::Orientation::Vertical => {
-            // Horizontal line at the bottom edge of `first`
+            // Horizontal line at the bottom edge of `first`.
             let row = fy + fh;
-            print_at(term, fx, row, fw, &"─".repeat(usize::from(fw)))?;
+            buf.hline(fx, row, fw, '─', style);
         }
     }
-    term.out().queue(ResetColor)?;
-    Ok(())
 }
 
 // ---------- Header / banner --------------------------------------------------
 
 /// Render a single-line bold header at `(rect.x, rect.y)` truncated to
 /// `rect.width`.
-pub fn header(term: &mut Terminal, rect: Rect, text: &str) -> Result<()> {
-    header_with(term, rect, text, &Palette::default())
+pub fn header(buf: &mut Buffer, rect: Rect, text: &str) {
+    header_with(buf, rect, text, &Palette::default());
 }
 
 /// Like [`header`] but with an explicit palette.
-pub fn header_with(
-    term: &mut Terminal,
-    rect: Rect,
-    text: &str,
-    palette: &Palette,
-) -> Result<()> {
+pub fn header_with(buf: &mut Buffer, rect: Rect, text: &str, palette: &Palette) {
     let (x, y, w, _h) = to_cell_rect(rect);
     if w == 0 {
-        return Ok(());
+        return;
     }
-    term.out()
-        .queue(SetAttribute(Attribute::Bold))?
-        .queue(SetForegroundColor(palette.accent))?;
-    print_at(term, x, y, w, text)?;
-    term.out()
-        .queue(SetAttribute(Attribute::Reset))?
-        .queue(ResetColor)?;
-    Ok(())
+    let style = Style::default().fg(palette.accent).bold();
+    buf.set_stringn(x, y, text, w, style);
 }
 
 // ---------- Paragraph (multiline text with word wrap) -----------------------
@@ -503,28 +435,21 @@ pub fn wrap_text(text: &str, width: u16) -> Vec<String> {
 /// width and truncated to the rect height. Lines longer than the height
 /// are dropped — callers that want scrolling pair this with an
 /// [`egaku::ScrollView`] and offset their input.
-pub fn paragraph(term: &mut Terminal, rect: Rect, text: &str) -> Result<()> {
-    paragraph_with(term, rect, text, &Palette::default())
+pub fn paragraph(buf: &mut Buffer, rect: Rect, text: &str) {
+    paragraph_with(buf, rect, text, &Palette::default());
 }
 
 /// Like [`paragraph`] but with an explicit palette.
-pub fn paragraph_with(
-    term: &mut Terminal,
-    rect: Rect,
-    text: &str,
-    palette: &Palette,
-) -> Result<()> {
+pub fn paragraph_with(buf: &mut Buffer, rect: Rect, text: &str, palette: &Palette) {
     let (x, y, w, h) = to_cell_rect(rect);
     if w == 0 || h == 0 {
-        return Ok(());
+        return;
     }
-    term.out().queue(SetForegroundColor(palette.foreground))?;
+    let style = Style::default().fg(palette.foreground);
     for (i, line) in wrap_text(text, w).iter().enumerate().take(usize::from(h)) {
         let row_idx = u16::try_from(i).unwrap_or(u16::MAX);
-        print_at(term, x, y + row_idx, w, line)?;
+        buf.set_stringn(x, y + row_idx, line, w, style);
     }
-    term.out().queue(ResetColor)?;
-    Ok(())
 }
 
 // ---------- BorderedBlock (titled box wrapping a child rect) ----------------
@@ -548,62 +473,55 @@ pub fn block_inner(rect: Rect) -> Rect {
 ///
 /// `focused` toggles the border color between accent (focused) and border
 /// (unfocused).
-pub fn bordered_block(
-    term: &mut Terminal,
-    rect: Rect,
-    title: &str,
-    focused: bool,
-) -> Result<()> {
-    bordered_block_with(term, rect, title, focused, &Palette::default())
+pub fn bordered_block(buf: &mut Buffer, rect: Rect, title: &str, focused: bool) {
+    bordered_block_with(buf, rect, title, focused, &Palette::default());
 }
 
 /// Like [`bordered_block`] but with an explicit palette.
 pub fn bordered_block_with(
-    term: &mut Terminal,
+    buf: &mut Buffer,
     rect: Rect,
     title: &str,
     focused: bool,
     palette: &Palette,
-) -> Result<()> {
+) {
     let (x, y, w, h) = to_cell_rect(rect);
     if w < 2 || h < 2 {
-        return Ok(());
+        return;
     }
     let color = if focused {
         palette.accent
     } else {
         palette.border
     };
-    term.out().queue(SetForegroundColor(color))?;
+    let style = Style::default().fg(color);
+    let right = x + w - 1;
+    let inner = w - 2;
 
-    // Top: ┌─ title ─...─┐
-    let title_part = if title.is_empty() {
-        String::new()
-    } else {
-        format!(" {title} ")
-    };
-    let title_w = u16::try_from(title_part.width()).unwrap_or(0).min(w - 2);
-    let dashes_total = w - 2 - title_w;
-    let top = format!(
-        "┌{}{}{}┐",
-        title_part.chars().take(usize::from(title_w)).collect::<String>(),
-        if title_w > 0 && dashes_total > 0 { "" } else { "" },
-        "─".repeat(usize::from(dashes_total)),
-    );
-    print_at(term, x, y, w, &top)?;
+    // Top: ┌─...─┐ with the title embedded near the left over the dashes.
+    buf.hline(x + 1, y, inner, '─', style);
+    buf.set_char(x, y, '┌', style);
+    buf.set_char(right, y, '┐', style);
+    if !title.is_empty() && inner > 0 {
+        let mut cx = buf.set_stringn(x + 1, y, " ", inner, style);
+        let title_budget = right.saturating_sub(cx);
+        cx = buf.set_stringn(cx, y, title, title_budget, style);
+        if cx < right {
+            buf.set_char(cx, y, ' ', style);
+        }
+    }
 
-    // Middle rows: │   ...   │  (don't paint the interior — caller does)
+    // Middle rows: │   ...   │  (don't paint the interior — caller does).
     for r in 1..(h - 1) {
-        print_at(term, x, y + r, 1, "│")?;
-        print_at(term, x + w - 1, y + r, 1, "│")?;
+        buf.set_char(x, y + r, '│', style);
+        buf.set_char(right, y + r, '│', style);
     }
 
     // Bottom: └────...────┘
-    let bottom = format!("└{}┘", "─".repeat(usize::from(w - 2)));
-    print_at(term, x, y + h - 1, w, &bottom)?;
-
-    term.out().queue(ResetColor)?;
-    Ok(())
+    let bottom = y + h - 1;
+    buf.hline(x + 1, bottom, inner, '─', style);
+    buf.set_char(x, bottom, '└', style);
+    buf.set_char(right, bottom, '┘', style);
 }
 
 // ---------- StatusLine (left + spacer + right tri-section) ------------------
@@ -616,39 +534,33 @@ pub fn bordered_block_with(
 /// If both segments together exceed the rect width, the right segment is
 /// truncated first (left is the "current state" usually authored by the
 /// app and more important to keep readable).
-pub fn status_line(term: &mut Terminal, rect: Rect, left: &str, right: &str) -> Result<()> {
-    status_line_with(term, rect, left, right, &Palette::default())
+pub fn status_line(buf: &mut Buffer, rect: Rect, left: &str, right: &str) {
+    status_line_with(buf, rect, left, right, &Palette::default());
 }
 
 /// Like [`status_line`] but with an explicit palette.
-pub fn status_line_with(
-    term: &mut Terminal,
-    rect: Rect,
-    left: &str,
-    right: &str,
-    palette: &Palette,
-) -> Result<()> {
+pub fn status_line_with(buf: &mut Buffer, rect: Rect, left: &str, right: &str, palette: &Palette) {
     let (x, y, w, _h) = to_cell_rect(rect);
     if w == 0 {
-        return Ok(());
+        return;
     }
+    let style = Style::default()
+        .fg(palette.foreground)
+        .bg(palette.selection);
+
+    // Paint the whole bar first so the gap between the segments carries the
+    // status background.
+    buf.blank(x, y, w, style);
+
     let left_str = truncate_to_width(left, w);
     let left_w = u16::try_from(left_str.width()).unwrap_or(w).min(w);
+    buf.set_stringn(x, y, &left_str, w, style);
 
     let right_budget = w - left_w;
     let right_str = truncate_to_width(right, right_budget);
     let right_w = u16::try_from(right_str.width()).unwrap_or(0);
-
-    let pad_w = w - left_w - right_w;
-    let pad = " ".repeat(usize::from(pad_w));
-
-    term.out()
-        .queue(SetBackgroundColor(palette.selection))?
-        .queue(SetForegroundColor(palette.foreground))?
-        .queue(MoveTo(x, y))?
-        .queue(Print(format!("{left_str}{pad}{right_str}")))?
-        .queue(ResetColor)?;
-    Ok(())
+    let right_x = x + w - right_w;
+    buf.set_stringn(right_x, y, &right_str, right_w, style);
 }
 
 #[cfg(test)]
@@ -699,7 +611,14 @@ mod tests {
     #[test]
     fn wrap_text_preserves_paragraph_breaks() {
         let lines = wrap_text("first line\n\nsecond line", 20);
-        assert_eq!(lines, vec!["first line".to_string(), String::new(), "second line".to_string()]);
+        assert_eq!(
+            lines,
+            vec![
+                "first line".to_string(),
+                String::new(),
+                "second line".to_string()
+            ]
+        );
     }
 
     #[test]
@@ -716,6 +635,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::float_cmp)] // `.max(0.0)` yields exactly 0.0 — exact compare is correct.
     fn block_inner_zero_floor() {
         let inner = block_inner(Rect::new(0.0, 0.0, 1.0, 1.0));
         assert_eq!(inner.width, 0.0);

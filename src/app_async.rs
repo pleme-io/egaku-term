@@ -25,8 +25,10 @@ use crossterm::event::{Event, EventStream};
 use egaku::KeyMap;
 use futures_util::StreamExt;
 
+use crate::buffer::Buffer;
 use crate::error::Result;
 use crate::event::from_crossterm;
+use crate::render::render_diff;
 use crate::terminal::Terminal;
 
 /// Async cousin of [`crate::App`]. Same shape, but `handle` and `draw` are
@@ -45,12 +47,11 @@ pub trait AsyncApp: Send {
         action: &Self::Action,
     ) -> impl std::future::Future<Output = Result<()>> + Send;
 
-    /// Paint the current state. Async because some apps want to fetch
-    /// preview content lazily; callers that don't can `async {}`.
-    fn draw(
-        &self,
-        term: &mut Terminal,
-    ) -> impl std::future::Future<Output = Result<()>> + Send;
+    /// Paint the current state into the frame buffer. Async because some apps
+    /// want to fetch preview content lazily; callers that don't can `async {}`.
+    /// The buffer is freshly reset before this is called; the runtime diffs it
+    /// against the previous frame and flushes only the changed cells.
+    fn draw(&self, frame: &mut Buffer) -> impl std::future::Future<Output = Result<()>> + Send;
 
     /// Return true to exit the loop.
     fn should_quit(&self) -> bool;
@@ -80,21 +81,38 @@ where
 {
     let mut term = Terminal::enter()?;
     let mut events = EventStream::new();
+    let (mut cols, mut rows) = term.size()?;
+    let mut prev = Buffer::empty(cols, rows);
+    let mut back = Buffer::empty(cols, rows);
+    term.clear()?;
+    term.flush()?;
 
     while !app.should_quit() {
-        term.clear()?;
-        app.draw(&mut term).await?;
-        term.flush()?;
+        back.reset();
+        app.draw(&mut back).await?;
+        let sync = term.sync_output();
+        render_diff(term.out(), &prev, &back, sync)?;
+        std::mem::swap(&mut prev, &mut back);
 
         match events.next().await {
             Some(Ok(evt)) => {
-                if let Some(combo) = from_crossterm(&evt) {
-                    if let Some(action) = app.keymap().lookup(&combo).cloned() {
+                if let Event::Resize(w, h) = evt {
+                    cols = w;
+                    rows = h;
+                    prev.resize(cols, rows);
+                    back.resize(cols, rows);
+                    term.clear()?;
+                    term.flush()?;
+                    app.on_unhandled(&evt).await?;
+                } else {
+                    if let Some(combo) = from_crossterm(&evt)
+                        && let Some(action) = app.keymap().lookup(&combo).cloned()
+                    {
                         app.handle(&action).await?;
                         continue;
                     }
+                    app.on_unhandled(&evt).await?;
                 }
-                app.on_unhandled(&evt).await?;
             }
             Some(Err(e)) => return Err(e.into()),
             None => return Ok(()), // event stream exhausted (terminal closed)
@@ -149,7 +167,7 @@ mod tests {
             Ok(())
         }
 
-        async fn draw(&self, _term: &mut Terminal) -> Result<()> {
+        async fn draw(&self, _frame: &mut Buffer) -> Result<()> {
             Ok(())
         }
 
