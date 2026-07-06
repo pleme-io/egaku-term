@@ -6,8 +6,10 @@
 use crossterm::event::{self, Event};
 use egaku::KeyMap;
 
+use crate::buffer::Buffer;
 use crate::error::Result;
 use crate::event::from_crossterm;
+use crate::render::render_diff;
 use crate::terminal::Terminal;
 
 /// Drives a terminal application via egaku state machines.
@@ -28,9 +30,10 @@ pub trait App {
     /// Apply a resolved action to the app's state.
     fn handle(&mut self, action: &Self::Action);
 
-    /// Paint the current state. The terminal is freshly cleared; the
-    /// runtime calls [`Terminal::flush`] after this returns.
-    fn draw(&self, term: &mut Terminal) -> Result<()>;
+    /// Paint the current state into the frame buffer. The buffer is freshly
+    /// reset (all blank cells) before this is called; the runtime diffs it
+    /// against the previous frame and flushes only the changed cells.
+    fn draw(&self, frame: &mut Buffer) -> Result<()>;
 
     /// Return true to exit the loop. Polled after every event.
     fn should_quit(&self) -> bool;
@@ -55,25 +58,46 @@ where
     A::Action: Clone,
 {
     let mut term = Terminal::enter()?;
+    let (mut cols, mut rows) = term.size()?;
+    // Two buffers: `prev` mirrors what is on screen, `back` is drawn into each
+    // frame. After clearing the terminal the screen matches a blank `prev`, so
+    // the first diff paints the whole first frame.
+    let mut prev = Buffer::empty(cols, rows);
+    let mut back = Buffer::empty(cols, rows);
+    term.clear()?;
+    term.flush()?;
 
     while !app.should_quit() {
-        term.clear()?;
-        app.draw(&mut term)?;
-        term.flush()?;
+        back.reset();
+        app.draw(&mut back)?;
+        let sync = term.sync_output();
+        render_diff(term.out(), &prev, &back, sync)?;
+        std::mem::swap(&mut prev, &mut back);
 
         let evt = event::read()?;
-        if let Some(combo) = from_crossterm(&evt) {
-            // Have to clone the action out: the borrow of `app` via
-            // `keymap()` would otherwise overlap with `handle(&mut self)`.
-            // Most app actions are small (Copy/Clone enums), so this is
-            // free in practice.
-            if let Some(action) = app.keymap().lookup(&combo) {
+        if let Event::Resize(w, h) = evt {
+            cols = w;
+            rows = h;
+            // Resize both buffers (which clears them) and clear the screen,
+            // so the next frame is a clean full repaint.
+            prev.resize(cols, rows);
+            back.resize(cols, rows);
+            term.clear()?;
+            term.flush()?;
+            app.on_unhandled(&evt);
+        } else {
+            // Have to clone the action out: the borrow of `app` via `keymap()`
+            // would otherwise overlap with `handle(&mut self)`. Most app
+            // actions are small (Copy/Clone enums), so this is free in practice.
+            if let Some(combo) = from_crossterm(&evt)
+                && let Some(action) = app.keymap().lookup(&combo)
+            {
                 let action = clone_via_ref(action);
                 app.handle(&action);
                 continue;
             }
+            app.on_unhandled(&evt);
         }
-        app.on_unhandled(&evt);
     }
 
     Ok(())
@@ -131,7 +155,7 @@ mod tests {
                 Act::Quit => self.done = true,
             }
         }
-        fn draw(&self, _term: &mut Terminal) -> Result<()> {
+        fn draw(&self, _frame: &mut Buffer) -> Result<()> {
             Ok(())
         }
         fn should_quit(&self) -> bool {

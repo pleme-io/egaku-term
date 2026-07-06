@@ -54,7 +54,7 @@ dependencies = [
 
 [[package]]
 name = "egaku-term"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "crossterm",
  "egaku",
@@ -62,6 +62,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
+ "unicode-segmentation",
  "unicode-width",
 ]
 
