@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "cargo_lock_sha256": "8f6d1399e41015ec677cc6d25d6bd449c4b9153991eaae532349c98d02acd4f5",
+  "cargo_lock_sha256": "e31da5cd84ff8027480442ac289c6a68a696b1fa23927500583f14f5879a3de7",
   "target_resolves": {
     "base": {
-      "bitflags-2.11.1": {
+      "bitflags-2.13.1": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": [
@@ -19,7 +19,7 @@
         "runtime_dependencies": [
           {
             "name": "bitflags",
-            "package_key": "bitflags-2.11.1",
+            "package_key": "bitflags-2.13.1",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -29,7 +29,7 @@
           },
           {
             "name": "mio",
-            "package_key": "mio-1.2.0",
+            "package_key": "mio-1.2.2",
             "kind": "normal",
             "features": [
               "os-poll"
@@ -94,7 +94,7 @@
           "windows"
         ]
       },
-      "egaku-0.1.0-d474b1ef31aa22244c9fd5b2c8cfd287870cdf27": {
+      "egaku-0.1.3-507b0e7be84568bbb5567b2d61f5ce9ab6501882": {
         "runtime_dependencies": [
           {
             "name": "serde",
@@ -130,7 +130,7 @@
           },
           {
             "name": "unicode_segmentation",
-            "package_key": "unicode-segmentation-1.13.2",
+            "package_key": "unicode-segmentation-1.13.3",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -152,7 +152,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.0": {
+      "egaku-term-0.3.1": {
         "runtime_dependencies": [
           {
             "name": "crossterm",
@@ -166,7 +166,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.0-d474b1ef31aa22244c9fd5b2c8cfd287870cdf27",
+            "package_key": "egaku-0.1.3-507b0e7be84568bbb5567b2d61f5ce9ab6501882",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -186,7 +186,7 @@
           },
           {
             "name": "unicode_segmentation",
-            "package_key": "unicode-segmentation-1.13.2",
+            "package_key": "unicode-segmentation-1.13.3",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -282,12 +282,12 @@
           "default"
         ]
       },
-      "log-0.4.29": {
+      "log-0.4.33": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
       },
-      "memchr-2.8.0": {
+      "memchr-2.8.3": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": [
@@ -295,7 +295,7 @@
           "std"
         ]
       },
-      "mio-1.2.0": {
+      "mio-1.2.2": {
         "runtime_dependencies": [
           {
             "name": "libc",
@@ -309,7 +309,7 @@
           },
           {
             "name": "log",
-            "package_key": "log-0.4.29",
+            "package_key": "log-0.4.33",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -389,7 +389,7 @@
           },
           {
             "name": "smallvec",
-            "package_key": "smallvec-1.15.1",
+            "package_key": "smallvec-1.15.2",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -425,7 +425,7 @@
           "proc-macro"
         ]
       },
-      "quote-1.0.45": {
+      "quote-1.0.46": {
         "runtime_dependencies": [
           {
             "name": "proc_macro2",
@@ -506,7 +506,7 @@
           },
           {
             "name": "quote",
-            "package_key": "quote-1.0.45",
+            "package_key": "quote-1.0.46",
             "kind": "normal",
             "features": [
               "proc-macro"
@@ -518,7 +518,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-2.0.117",
+            "package_key": "syn-2.0.119",
             "kind": "normal",
             "features": [
               "clone-impls",
@@ -538,7 +538,7 @@
           "default"
         ]
       },
-      "serde_json-1.0.149": {
+      "serde_json-1.0.150": {
         "runtime_dependencies": [
           {
             "name": "itoa",
@@ -552,7 +552,7 @@
           },
           {
             "name": "memchr",
-            "package_key": "memchr-2.8.0",
+            "package_key": "memchr-2.8.3",
             "kind": "normal",
             "features": [],
             "uses_default_features": false,
@@ -572,7 +572,7 @@
           },
           {
             "name": "zmij",
-            "package_key": "zmij-1.0.21",
+            "package_key": "zmij-1.0.23",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -631,7 +631,7 @@
           },
           {
             "name": "mio_1_0",
-            "package_key": "mio-1.2.0",
+            "package_key": "mio-1.2.2",
             "kind": "normal",
             "features": [
               "net",
@@ -685,12 +685,12 @@
         "build_dependencies": [],
         "features": []
       },
-      "smallvec-1.15.1": {
+      "smallvec-1.15.2": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
       },
-      "syn-2.0.117": {
+      "syn-2.0.119": {
         "runtime_dependencies": [
           {
             "name": "proc_macro2",
@@ -704,7 +704,7 @@
           },
           {
             "name": "quote",
-            "package_key": "quote-1.0.45",
+            "package_key": "quote-1.0.46",
             "kind": "normal",
             "features": [],
             "uses_default_features": false,
@@ -769,7 +769,7 @@
           },
           {
             "name": "quote",
-            "package_key": "quote-1.0.45",
+            "package_key": "quote-1.0.46",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -779,7 +779,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-2.0.117",
+            "package_key": "syn-2.0.119",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -791,7 +791,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "tokio-1.52.1": {
+      "tokio-1.53.0": {
         "runtime_dependencies": [
           {
             "name": "pin_project_lite",
@@ -805,7 +805,7 @@
           },
           {
             "name": "tokio_macros",
-            "package_key": "tokio-macros-2.7.0",
+            "package_key": "tokio-macros-2.7.1",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -824,7 +824,7 @@
           "tokio-macros"
         ]
       },
-      "tokio-macros-2.7.0": {
+      "tokio-macros-2.7.1": {
         "runtime_dependencies": [
           {
             "name": "proc_macro2",
@@ -838,7 +838,7 @@
           },
           {
             "name": "quote",
-            "package_key": "quote-1.0.45",
+            "package_key": "quote-1.0.46",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -848,7 +848,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-2.0.117",
+            "package_key": "syn-2.0.119",
             "kind": "normal",
             "features": [
               "full"
@@ -917,7 +917,7 @@
           },
           {
             "name": "quote",
-            "package_key": "quote-1.0.45",
+            "package_key": "quote-1.0.46",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -927,7 +927,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-2.0.117",
+            "package_key": "syn-2.0.119",
             "kind": "normal",
             "features": [
               "clone-impls",
@@ -971,7 +971,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "unicode-segmentation-1.13.2": {
+      "unicode-segmentation-1.13.3": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -984,7 +984,7 @@
           "default"
         ]
       },
-      "zmij-1.0.21": {
+      "zmij-1.0.23": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -997,7 +997,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.11.1",
+                "package_key": "bitflags-2.13.1",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1084,7 +1084,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.11.1",
+                "package_key": "bitflags-2.13.1",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1201,7 +1201,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.11.1",
+                "package_key": "bitflags-2.13.1",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1307,7 +1307,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.11.1",
+                "package_key": "bitflags-2.13.1",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1394,7 +1394,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.11.1",
+                "package_key": "bitflags-2.13.1",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1511,7 +1511,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.11.1",
+                "package_key": "bitflags-2.13.1",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1614,7 +1614,7 @@
     }
   },
   "per_crate": {
-    "bitflags-2.11.1": {
+    "bitflags-2.13.1": {
       "edition": "2021"
     },
     "cfg-if-1.0.4": {
@@ -1623,10 +1623,10 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.0-d474b1ef31aa22244c9fd5b2c8cfd287870cdf27": {
+    "egaku-0.1.3-507b0e7be84568bbb5567b2d61f5ce9ab6501882": {
       "edition": "2024"
     },
-    "egaku-term-0.3.0": {
+    "egaku-term-0.3.1": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
@@ -1649,13 +1649,13 @@
     "lock_api-0.4.14": {
       "edition": "2021"
     },
-    "log-0.4.29": {
+    "log-0.4.33": {
       "edition": "2021"
     },
-    "memchr-2.8.0": {
+    "memchr-2.8.3": {
       "edition": "2021"
     },
-    "mio-1.2.0": {
+    "mio-1.2.2": {
       "edition": "2021"
     },
     "once_cell-1.21.4": {
@@ -1675,7 +1675,7 @@
       "edition": "2021",
       "build_script": "build.rs"
     },
-    "quote-1.0.45": {
+    "quote-1.0.46": {
       "edition": "2021",
       "build_script": "build.rs"
     },
@@ -1698,7 +1698,7 @@
       "edition": "2021",
       "proc_macro": true
     },
-    "serde_json-1.0.149": {
+    "serde_json-1.0.150": {
       "edition": "2021",
       "build_script": "build.rs"
     },
@@ -1712,10 +1712,10 @@
     "signal-hook-registry-1.4.8": {
       "edition": "2015"
     },
-    "smallvec-1.15.1": {
+    "smallvec-1.15.2": {
       "edition": "2018"
     },
-    "syn-2.0.117": {
+    "syn-2.0.119": {
       "edition": "2021"
     },
     "thiserror-2.0.18": {
@@ -1726,10 +1726,10 @@
       "edition": "2021",
       "proc_macro": true
     },
-    "tokio-1.52.1": {
+    "tokio-1.53.0": {
       "edition": "2021"
     },
-    "tokio-macros-2.7.0": {
+    "tokio-macros-2.7.1": {
       "edition": "2021",
       "proc_macro": true
     },
@@ -1746,19 +1746,19 @@
     "unicode-ident-1.0.24": {
       "edition": "2021"
     },
-    "unicode-segmentation-1.13.2": {
+    "unicode-segmentation-1.13.3": {
       "edition": "2018"
     },
     "unicode-width-0.2.2": {
       "edition": "2021"
     },
-    "zmij-1.0.21": {
+    "zmij-1.0.23": {
       "edition": "2021",
       "build_script": "build.rs"
     }
   },
   "git_nar_sha256": {
-    "egaku-0.1.0-d474b1ef31aa22244c9fd5b2c8cfd287870cdf27": "sha256-IHsdbipeAWHeJMr3+/SABJjpfg9zdRYrTNQ0KJghyQM="
+    "egaku-0.1.3-507b0e7be84568bbb5567b2d61f5ce9ab6501882": "sha256-22bq167+Cgkz6bEnOgBZKGZ67V6YtLh/+rQtj5X2bp4="
   },
   "flake_metadata": {}
 }
