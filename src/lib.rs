@@ -22,10 +22,15 @@
 //!   full-repaint, no `format!()` (★★ TYPED EMISSION).
 //! - [`event::from_crossterm`] — convert any `crossterm::event::Event` into an
 //!   [`egaku::KeyCombo`]. Pairs with [`egaku::KeyMap`] for action dispatch.
-//! - [`draw`] — drawers for every widget egaku ships (`ListView`, `TextInput`,
-//!   `TabBar`, `Modal`, `SplitPane`, `ScrollView`). Each one takes a
-//!   [`Buffer`], a [`Rect`](egaku::Rect), the widget, the theme, and a focus
+//! - [`draw`] — drawers for every widget egaku ships (`ListView`, `TableView`,
+//!   `TextInput`, `TabBar`, `Modal`, `SplitPane`, `ScrollView`). Each one takes
+//!   a [`Buffer`], a [`Rect`](egaku::Rect), the widget, the theme, and a focus
 //!   flag.
+//! - [`Draw`] — the uniform surface over those drawers:
+//!   `widget.draw(buf, rect, palette)`, object-safe, sourcing focus from the
+//!   widget's own `is_focused()`. It lives here rather than in egaku because a
+//!   drawer needs a `Buffer` and a `Palette` and egaku depends on no renderer.
+//!   `Modal` is a documented non-implementor — see the trait docs.
 //! - [`TestBackend`] — headless [`Buffer`] capture for golden-frame tests.
 //! - [`App`] / [`run`] — a generic event-loop runtime. Implement `App::handle`
 //!   + `App::draw` and `run(&mut app)` does the rest.
@@ -85,6 +90,7 @@ pub use app::{App, run};
 pub use backend::TestBackend;
 pub use buffer::Buffer;
 pub use cell::{Cell, Modifiers, Style};
+pub use draw::Draw;
 pub use error::{Error, Result};
 pub use event::from_crossterm;
 pub use render::render_diff;
