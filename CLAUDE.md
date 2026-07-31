@@ -1,97 +1,5 @@
 # Egaku-Term — terminal renderer + runtime for egaku widgets
 
-> `pending-egaku-bump: Draw + draw::table need egaku ≥ the
-> Selectable/TableView commit (2026-07-31)`
->
-> **This repo does not compile against its currently-locked egaku.** The
-> `egaku` dependency is a git dep and `Cargo.lock` pins **0.1.3 @ 507b0e7**,
-> which predates `Selectable`, `TableView` and the widget-owned `focused`
-> flags that `Draw` and `draw::table` read. The source landed here in the
-> same session as the egaku side, and the lock bump is deliberately NOT in
-> that commit because the egaku commit is unpushed — a lock naming an
-> unfetchable rev is worse than a lock naming a stale one.
->
-> **Blocked on one act, and only one: `git push` in `../egaku`.** Nothing in
-> this repo can clear it. egaku's `e602369` is local-only (`origin/main` is
-> `1bfa3e7`). This repo's own `735d936` is local-only too, so the broken
-> state has never reached the remote.
->
-> **Re-verified independently 2026-07-31, measured end to end:**
->
-> | run | result |
-> |---|---|
-> | `cargo build --all-targets` (locked egaku) | **RED** — `E0432` on `TableView`, `TableRow`, `Column`, `SortKey`, `SortOrder`, `IDENTITY_FIELD` |
-> | `--config patch…` *without* `cargo update` | **RED**, plus `warning: Patch egaku v0.1.4 … was not used` — the update step is genuinely load-bearing, not ceremony |
-> | `cargo update -p egaku` then `cargo test`, both under `--config patch…` | **GREEN** — 81 lib + 7 golden + 8 doc = **96**, no patch warning |
-> | same with `--all-features` | **GREEN** — 83 lib (+2 `app_async`) + 7 + 8 = **98** |
->
-> Reproduce (the `--config` must be on **both** commands, and the second is
-> pointless without the first):
->
-> ```bash
-> cargo update -p egaku --config 'patch."https://github.com/pleme-io/egaku".egaku.path="../egaku"'
-> cargo test          --config 'patch."https://github.com/pleme-io/egaku".egaku.path="../egaku"'
-> git checkout Cargo.lock   # the override rewrites it; never commit that
-> ```
->
-> **Tier: this is a MEASURED green under a path override, not a shipped
-> green.** It proves the source is correct against the egaku that exists on
-> this disk. It proves nothing about any egaku a fetch can reach.
->
-> **What actually enforces this — measured, not assumed:**
->
-> | surface | catches | tier | runs? |
-> |---|---|---|---|
-> | `src/draw.rs`'s `use egaku::…` | the bump forgotten | **artifact cannot be produced** (`E0432`) | every build, everywhere |
-> | `substrate/lib/build/rust/lockfile-delta.nix` D2 tie | `Cargo.gen.lock` not regenerated with `Cargo.lock` | **hard Nix eval throw** | every `nix build`; `gen confirm` offline |
-> | `tests/pending_egaku_bump.rs` | this token outliving its cause | test-caught | `cargo test`; no CI here runs tests |
-> | `.github/workflows/gen-spec.yml` | stale `Cargo.gen.lock` on a PR | CI-caught | Actions are enabled and do run |
->
-> The forward direction needs nothing added — a compile error is already the
-> strongest tier there is. The seal covers the direction the compiler cannot:
-> once the bump lands everything goes green and this block becomes a **false**
-> claim that nothing re-reads. It is a deliberate no-op today and arms itself
-> at the bump. Its path-override arm asserts nothing on purpose — that state
-> is ambiguous between today's measurement workflow and ordinary local egaku
-> development later. Read the module docs before changing it.
->
-> **The clearing chain.** Verified against this repo's actual files; step 2 is
-> not the obvious one. Steps 2–5 land in ONE commit.
->
-> ```bash
-> # 1. the only blocking act — and it is not in this repo
-> cd ../egaku && git push origin main          # e602369 must be fetchable
->
-> cd ../egaku-term
-> # 2. NO manifest edit exists to make. Cargo.toml carries
-> #    egaku = { git = "…", version = "0.1" } with NO `rev =` key, so
-> #    `cargo update` alone moves the pin to the new default-branch head.
-> cargo update -p egaku
-> # 3. D2 delta-only: the delta records sha256(Cargo.lock) and
-> #    lockfile-delta.nix THROWS at eval on a mismatch. Same commit, always.
-> gen build . --commit && gen confirm
-> # 4. green with NO --config override — that is the whole point
-> cargo test
-> # 5. delete this block; tests/pending_egaku_bump.rs goes RED until you do
-> ```
->
-> **Known, unrelated:** `gen confirm` exits 1 here today with
-> `untied-manifests`. That is not staleness — `Cargo.gen.lock` is
-> `schema_version: 1` and records no manifest digests, which is fleet-wide
-> v1 migration debt across ~413 committed deltas. The lock tie itself matches
-> (`e31da5cd…`) and `lockfile-delta.nix` reads only that, so `nix build` is
-> fine. Step 3 regenerates a v2 delta and clears it as a side effect.
->
-> **Other stale pins: none.** `egaku` is the *only* git dependency —
-> 1 of 62 `source =` lines in `Cargo.lock` is `git+`, and 1 of 1 `git =` keys
-> in `Cargo.toml`. Everything else resolves from crates.io.
-
-> **★★★ CSE / Knowable Construction.** This repo operates under
-> **Constructive Substrate Engineering** — canonical specification at
-> [`pleme-io/theory/CONSTRUCTIVE-SUBSTRATE-ENGINEERING.md`](https://github.com/pleme-io/theory/blob/main/CONSTRUCTIVE-SUBSTRATE-ENGINEERING.md).
-> The Compounding Directive (operational rules) is in the org-level
-> pleme-io/CLAUDE.md ★★★ section. Read both before non-trivial changes.
-
 ## Why this crate exists
 
 `egaku` is the canonical pleme-io widget toolkit, but by design it is
@@ -128,9 +36,23 @@ cargo build
 cargo test
 ```
 
-**Both are RED today** — see `pending-egaku-bump:` at the top of this file for
-why and for the override that makes them green. That is expected, recorded,
-and blocked on a push in `../egaku`, not on anything in this repo.
+**Both are green** as of 2026-07-31, against `egaku 0.1.4 @ e602369` — the
+commit that added `Selectable`/`TableView`/the widget-owned `focused` flags.
+They were RED for the length of one session while that commit sat unpushed,
+verified in the meantime under a `--config patch` override rather than by
+committing a lock that named an unfetchable rev.
+
+That waiver is gone rather than merely satisfied, and `tests/pending_egaku_bump.rs`
+is why: it ties the waiver token to `Cargo.lock`'s resolved `egaku` source,
+stayed a no-op for the whole waiver's life, and **fired the moment the bump
+landed** — *"STALE WAIVER … a false claim that this repo does not compile
+against its locked egaku."* A pending note that nothing enforces outlives its
+own truth; this one could not.
+
+The token is deliberately not spelled out above: the seal matches the literal
+string, so quoting it in prose re-arms the waiver. That is the seal working,
+not a rough edge — it cannot tell an explanation from a claim, and it should
+not try.
 
 ## Architecture
 
