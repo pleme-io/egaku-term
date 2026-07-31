@@ -10,6 +10,12 @@
 //! escape sequence (★★ TYPED EMISSION / Quadro P5). The runtime diffs the
 //! buffer against the previous frame and flushes only the changed cells.
 
+// If this line fails with `E0432: no TableView in the root`, you are compiling
+// against the egaku the lockfile pins, which predates `Selectable`/`TableView`.
+// That is a KNOWN, RECORDED state, not a new breakage: read
+// `pending-egaku-bump:` at the top of CLAUDE.md for the clearing chain, and see
+// `tests/pending_egaku_bump.rs` for why the compiler — not a test — is the gate
+// in this direction. (A signpost, not a check; the hard gate is this import.)
 use egaku::{ListView, Modal, Rect, ScrollView, SplitPane, TabBar, TableRow, TableView, TextInput};
 use unicode_width::UnicodeWidthStr;
 
