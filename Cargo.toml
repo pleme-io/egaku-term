@@ -34,4 +34,10 @@ futures-util = { version = "0.3", default-features = false, features = ["std"], 
 
 [dev-dependencies]
 serde_json = "1"
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "time"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "time", "sync"] }
+
+# `AsyncApp` only exists under the `tokio` feature, so its tests only compile
+# there. Run them with `cargo test --features tokio` (or `--all-features`).
+[[test]]
+name = "wake_arm"
+required-features = ["tokio"]

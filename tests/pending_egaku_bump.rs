@@ -90,7 +90,11 @@ fn classify(source: Option<&str>) -> Locked {
 
 /// `key = "value"` on one already-trimmed `Cargo.lock` line.
 fn kv(line: &str, key: &str) -> Option<String> {
-    let rest = line.strip_prefix(key)?.trim_start().strip_prefix('=')?.trim();
+    let rest = line
+        .strip_prefix(key)?
+        .trim_start()
+        .strip_prefix('=')?
+        .trim();
     Some(rest.strip_prefix('"')?.strip_suffix('"')?.to_string())
 }
 
@@ -209,11 +213,15 @@ fn the_seal_fires_on_a_bumped_lock_and_stays_quiet_on_the_override() {
         Locked::StaleGitRev
     );
     assert_eq!(
-        classify(Some("git+https://github.com/pleme-io/egaku#deadbeefdeadbeef")),
+        classify(Some(
+            "git+https://github.com/pleme-io/egaku#deadbeefdeadbeef"
+        )),
         Locked::Bumped("deadbeefdeadbeef".to_string())
     );
     assert_eq!(
-        classify(Some("registry+https://github.com/rust-lang/crates.io-index")),
+        classify(Some(
+            "registry+https://github.com/rust-lang/crates.io-index"
+        )),
         Locked::Bumped("registry+https://github.com/rust-lang/crates.io-index".to_string())
     );
 
