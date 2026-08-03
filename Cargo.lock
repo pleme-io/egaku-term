@@ -42,8 +42,8 @@ dependencies = [
 
 [[package]]
 name = "egaku"
-version = "0.1.8"
-source = "git+https://github.com/pleme-io/egaku#38515fa7af160bccce6e44fab87751f76af17c2a"
+version = "0.1.9"
+source = "git+https://github.com/pleme-io/egaku#f07c7efb9275d8b9f5f690dedc01def6524c4e33"
 dependencies = [
  "serde",
  "thiserror",
