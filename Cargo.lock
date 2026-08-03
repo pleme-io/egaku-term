@@ -43,7 +43,8 @@ dependencies = [
 [[package]]
 name = "egaku"
 version = "0.1.9"
-source = "git+https://github.com/pleme-io/egaku#f07c7efb9275d8b9f5f690dedc01def6524c4e33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ceaee5cd72ecad5897c6c2856d0006ce4a301a7668a4b79944ae5ab2e864327"
 dependencies = [
  "serde",
  "thiserror",
