@@ -83,8 +83,25 @@ pub trait AsyncApp: Send {
     /// `watch::Receiver::changed()` or a `tokio::time::sleep` is safe; a future
     /// that consumes from a queue and buffers internally is not, and will drop
     /// items on every keystroke.
+    ///
+    /// It takes `&self`, not `&mut self`, and that is deliberate: a signal
+    /// future is the one thing here that gets destroyed part-way through, so
+    /// it must not be able to leave half-written state behind. Do the writing
+    /// in [`AsyncApp::on_wake`], which runs after the select has resolved and
+    /// therefore always runs to completion.
     fn wake(&self) -> impl std::future::Future<Output = ()> + Send {
         std::future::pending()
+    }
+
+    /// Apply whatever [`AsyncApp::wake`] signalled, then the runtime redraws.
+    ///
+    /// This is the `&mut self` half of the wakeup: re-read a source, drain a
+    /// buffer, advance an animation. It is called only after `wake` resolved,
+    /// outside the `select!`, so unlike the signal future it is never dropped
+    /// part-way — which is what makes a torn update unrepresentable rather
+    /// than merely unlikely.
+    fn on_wake(&mut self) -> impl std::future::Future<Output = Result<()>> + Send {
+        async { Ok(()) }
     }
 
     /// Optional fall-through for events the keymap didn't resolve.
@@ -130,14 +147,19 @@ where
         // without a keystroke — an embedded refresher would spin invisibly.
         // `wake()` defaults to `pending()`, so an app that ignores it lowers
         // to exactly the previous behaviour.
-        let evt = tokio::select! {
+        // `Some(_)` = the event stream won, `None` = the wakeup won. The
+        // immutable borrow taken by `app.wake()` ends with the `select!`
+        // expression, which is what lets `on_wake` take `&mut app` below.
+        let outcome = tokio::select! {
             biased;
-            e = events.next() => e,
-            () = app.wake() => {
-                // Redraw only. Loop back to the top, which re-draws and
-                // re-selects; no event to dispatch.
-                continue;
-            }
+            e = events.next() => Some(e),
+            () = app.wake() => None,
+        };
+        let Some(evt) = outcome else {
+            app.on_wake().await?;
+            // Redraw only: back to the top, which re-draws and re-selects.
+            // No event to dispatch.
+            continue;
         };
         match evt {
             Some(Ok(evt)) => {
