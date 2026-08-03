@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "b302e445c8734350fbf3c14ab7e89083f0b6c9ec389578028d0158a6fecef800",
+  "cargo_lock_sha256": "de6f2f4ae6d72943b86b9341a546f3b7a901ee2b98cae094c8fc917cadc565f9",
   "manifest_sha256": {
-    "Cargo.toml": "11fdf1d8edcc6e4ab7f9d960ab001abf1a02395be26da9b785465319d43f5f3f"
+    "Cargo.toml": "4febcb4309ff84c27e4b59d2c1a17de27b0487713be9afc2c18014802f0803b4"
   },
   "target_resolves": {
     "base": {
@@ -97,7 +97,7 @@
           "windows"
         ]
       },
-      "egaku-0.1.9-f07c7efb9275d8b9f5f690dedc01def6524c4e33": {
+      "egaku-0.1.9": {
         "runtime_dependencies": [
           {
             "name": "serde",
@@ -169,7 +169,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.9-f07c7efb9275d8b9f5f690dedc01def6524c4e33",
+            "package_key": "egaku-0.1.9",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1669,7 +1669,7 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.9-f07c7efb9275d8b9f5f690dedc01def6524c4e33": {
+    "egaku-0.1.9": {
       "edition": "2024"
     },
     "egaku-term-0.3.5": {
@@ -1806,8 +1806,6 @@
       "build_script": "build.rs"
     }
   },
-  "git_nar_sha256": {
-    "egaku-0.1.9-f07c7efb9275d8b9f5f690dedc01def6524c4e33": "sha256-2i+tCTOfR93RRd+gKtA9GCYW/2i+15ekds4brXv5fvQ="
-  },
+  "git_nar_sha256": {},
   "flake_metadata": {}
 }
