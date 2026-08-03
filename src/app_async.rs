@@ -42,7 +42,7 @@ use crate::render::render_diff;
 use crate::terminal::Terminal;
 
 /// Async cousin of [`crate::App`]. Same shape, but `handle` and `draw` are
-/// async, and there's an optional `tick` hook for periodic background work.
+/// async, and [`AsyncApp::wake`] lets a non-input source request a redraw.
 pub trait AsyncApp: Send {
     /// The action enum the app's [`KeyMap`] resolves keys to.
     type Action;
@@ -65,6 +65,27 @@ pub trait AsyncApp: Send {
 
     /// Return true to exit the loop.
     fn should_quit(&self) -> bool;
+
+    /// Resolve when something OTHER than input should redraw the view.
+    ///
+    /// The default is [`std::future::pending`] — it never resolves, so an app
+    /// that does not override this behaves exactly as before: input-only.
+    /// That default is what makes this addition non-breaking.
+    ///
+    /// Override it to await a `watch::Receiver::changed()`, an interval tick,
+    /// or a channel recv. `run_async` selects over this and the event stream,
+    /// so resolving here causes exactly one redraw and nothing else — it is a
+    /// *wakeup*, not a callback, which is why it takes `&self` and returns
+    /// nothing. Mutating state belongs in whatever produced the signal.
+    ///
+    /// Cancellation-safety is the caller's obligation: the returned future is
+    /// dropped un-polled whenever an input event wins the select. A
+    /// `watch::Receiver::changed()` or a `tokio::time::sleep` is safe; a future
+    /// that consumes from a queue and buffers internally is not, and will drop
+    /// items on every keystroke.
+    fn wake(&self) -> impl std::future::Future<Output = ()> + Send {
+        std::future::pending()
+    }
 
     /// Optional fall-through for events the keymap didn't resolve.
     fn on_unhandled(
@@ -104,7 +125,21 @@ where
         render_diff(term.out(), &prev, &back, sync)?;
         std::mem::swap(&mut prev, &mut back);
 
-        match events.next().await {
+        // The one non-input wakeup path. Before this existed the loop had a
+        // single parking await on `events.next()`, so a view could not update
+        // without a keystroke — an embedded refresher would spin invisibly.
+        // `wake()` defaults to `pending()`, so an app that ignores it lowers
+        // to exactly the previous behaviour.
+        let evt = tokio::select! {
+            biased;
+            e = events.next() => e,
+            () = app.wake() => {
+                // Redraw only. Loop back to the top, which re-draws and
+                // re-selects; no event to dispatch.
+                continue;
+            }
+        };
+        match evt {
             Some(Ok(evt)) => {
                 if let Event::Resize(w, h) = evt {
                     cols = w;
