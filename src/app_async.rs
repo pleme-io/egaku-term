@@ -16,8 +16,18 @@
 //!    the same loop.
 //!
 //! `run_async` does (1)+(2). For (3) — apps that need to multiplex events
-//! with their own streams — use [`AsyncApp::tick`] (called whenever the
-//! event source goes idle for `tick_interval`). Or skip the runtime and
+//! with their own streams. **`AsyncApp::tick` DOES NOT EXIST** — this line
+//! promised it, and a `tick_interval`, from at least 0.3.1 onward. The trait
+//! below has four methods and none of them is a tick; `run_async`'s loop is a
+//! single `events.next().await` with no `tokio::select!`, so **a consumer
+//! cannot be woken by anything except input**. Corrected 2026-08-03 after the
+//! promise cost a downstream diagnosis: banken wrote `refresh()` against this
+//! contract and it has had zero callers ever since.
+//!
+//! Until a tick lands, the shipped way to get a periodic wakeup is to skip
+//! `run_async` and hand-roll the loop — `hibiki/src/main.rs:209` does exactly
+//! that with an `EventStream` arm plus a `tokio::time::interval` arm, using
+//! only public API from this crate. Or skip the runtime and
 //! drive [`Terminal`] + drawers directly from your own `select!` loop —
 //! both are first-class.
 
