@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "f678a87495f606cd9709bc71c8ab9915eb4e0f2cf4e129b25dbfd1c16599ddeb",
+  "cargo_lock_sha256": "b302e445c8734350fbf3c14ab7e89083f0b6c9ec389578028d0158a6fecef800",
   "manifest_sha256": {
-    "Cargo.toml": "c34662d4684c5ff4455879fe49cb455933d5f6399605c9efa47400250684c355"
+    "Cargo.toml": "11fdf1d8edcc6e4ab7f9d960ab001abf1a02395be26da9b785465319d43f5f3f"
   },
   "target_resolves": {
     "base": {
@@ -155,7 +155,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.4": {
+      "egaku-term-0.3.5": {
         "runtime_dependencies": [
           {
             "name": "crossterm",
@@ -1672,7 +1672,7 @@
     "egaku-0.1.9-f07c7efb9275d8b9f5f690dedc01def6524c4e33": {
       "edition": "2024"
     },
-    "egaku-term-0.3.4": {
+    "egaku-term-0.3.5": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
