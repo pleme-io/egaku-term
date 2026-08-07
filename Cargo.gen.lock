@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "c4eb9205e8f5c67539a3bb8c48dcea235afbb60d0c555df00d213ddaf10948cd",
+  "cargo_lock_sha256": "b0d69e2249ff9f454efdbdaf9166faeafc4a75260418275d701ebb9b28b405b9",
   "manifest_sha256": {
-    "Cargo.toml": "768af76dd42e6e28fe0643bdfa84910e76dc54ca0c7fbddf1b9cd3241dc145e3"
+    "Cargo.toml": "6693f42d8130626b2efeab9b7a66a0f8b53701be6c550cca145c0f35273a3cd2"
   },
   "target_resolves": {
     "base": {
-      "awase-0.1.6": {
+      "awase-0.1.7": {
         "runtime_dependencies": [
           {
             "name": "serde",
@@ -193,11 +193,11 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.7": {
+      "egaku-term-0.3.8": {
         "runtime_dependencies": [
           {
             "name": "awase",
-            "package_key": "awase-0.1.6",
+            "package_key": "awase-0.1.7",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1708,7 +1708,7 @@
     }
   },
   "per_crate": {
-    "awase-0.1.6": {
+    "awase-0.1.7": {
       "edition": "2024"
     },
     "bitflags-2.13.1": {
@@ -1723,7 +1723,7 @@
     "egaku-0.1.9": {
       "edition": "2024"
     },
-    "egaku-term-0.3.7": {
+    "egaku-term-0.3.8": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
