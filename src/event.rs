@@ -210,11 +210,28 @@ pub mod testing {
     use super::{to_hotkey, KeyCode, KeyEvent, KeyModifiers};
     use std::collections::HashSet;
 
-    /// Every unmodified [`awase::Hotkey`] a terminal can deliver.
+    /// The modifier combinations a terminal reports. Not the full power set:
+    /// CTRL+ALT+SHIFT together is vanishingly rare in a TUI binding, and each
+    /// extra combination is probe cost for no coverage.
+    const MODS: &[KeyModifiers] = &[
+        KeyModifiers::NONE,
+        KeyModifiers::SHIFT,
+        KeyModifiers::CONTROL,
+        KeyModifiers::ALT,
+        KeyModifiers::SUPER,
+    ];
+
+    /// Every [`awase::Hotkey`] a terminal can deliver.
     ///
-    /// The bare-key set, which is what a full-screen TUI binds: it owns the
-    /// keyboard, so it needs no modifier to disambiguate. For a modified
-    /// chord, build the `KeyEvent` and call [`to_hotkey`] directly.
+    /// The key set crossed with the modifier combinations a terminal actually
+    /// reports. Modified chords are included deliberately: the first real
+    /// consumer of this probe bound `shift+g`, which is perfectly deliverable,
+    /// and a bare-keys-only set rejected it as dead. A probe that answers
+    /// "undeliverable" for a working chord is worse than no probe — it
+    /// teaches people to distrust it.
+    ///
+    /// HYPER and META are absent because [`to_hotkey`] refuses them; that is
+    /// the honest answer rather than an omission.
     #[must_use]
     pub fn deliverable() -> HashSet<awase::Hotkey> {
         let mut codes: Vec<KeyCode> = "abcdefghijklmnopqrstuvwxyz0123456789 /?-=[];',.`\\"
@@ -240,10 +257,24 @@ pub mod testing {
         ]);
         codes.extend((1..=20u8).map(KeyCode::F));
 
-        codes
-            .into_iter()
-            .filter_map(|code| to_hotkey(&KeyEvent::new(code, KeyModifiers::NONE)))
-            .collect()
+        let mut out = HashSet::new();
+        for code in codes {
+            for m in MODS {
+                // A shifted letter arrives as the UPPERCASE char with shift
+                // set, which is what a keyboard actually sends — probe that
+                // shape as well as the plain one.
+                if let (KeyCode::Char(c), true) = (code, m.contains(KeyModifiers::SHIFT))
+                    && let Some(hk) =
+                        to_hotkey(&KeyEvent::new(KeyCode::Char(c.to_ascii_uppercase()), *m))
+                {
+                    out.insert(hk);
+                }
+                if let Some(hk) = to_hotkey(&KeyEvent::new(code, *m)) {
+                    out.insert(hk);
+                }
+            }
+        }
+        out
     }
 
     /// Assert every chord in `authored` is one a keypress can produce.
@@ -418,6 +449,27 @@ mod typed_delivery_tests {
                 d.contains(&Hotkey::new(AMods::NONE, k)),
                 "{k} should be deliverable"
             );
+        }
+    }
+
+    /// **A flaw the first real consumer found.** The probe originally
+    /// generated only unmodified events, so it answered "undeliverable" for
+    /// `shift+g` — a chord any keyboard produces. alicerce binds exactly that
+    /// and the probe called its working key dead.
+    ///
+    /// A probe that is wrong about a working chord is worse than no probe: it
+    /// teaches people to distrust it, and then it cannot be used to catch the
+    /// real dead keys either.
+    #[test]
+    fn the_probe_includes_modified_chords() {
+        let d = testing::deliverable();
+        for hk in [
+            Hotkey::new(AMods::SHIFT, AKey::G),
+            Hotkey::new(AMods::CTRL, AKey::C),
+            Hotkey::new(AMods::ALT, AKey::X),
+            Hotkey::new(AMods::CMD, AKey::S),
+        ] {
+            assert!(d.contains(&hk), "`{hk}` is deliverable and must be present");
         }
     }
 
