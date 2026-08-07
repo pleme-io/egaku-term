@@ -35,6 +35,12 @@ tokio = ["dep:tokio", "dep:futures-util", "crossterm/event-stream"]
 # rebase (pleme-io/actions 6907a60) is what finally let the release get far
 # enough to reveal this. banken already names egaku by version; this matches.
 egaku = "0.1"
+# The typed key vocabulary this crate DELIVERS INTO. egaku itself must not
+# depend on awase (its load-bearing property is no renderer, no backend);
+# egaku-term is the adapter, and an adapter is exactly the layer that may
+# know both sides. awase's deps are a strict subset of egaku's, so this
+# edge adds no transitive crate.
+awase = "0.1"
 crossterm = "0.28"
 thiserror = "2"
 unicode-width = "0.2"

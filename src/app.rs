@@ -42,6 +42,82 @@ pub trait App {
     /// (text input characters, mouse events, resize, etc.). The default
     /// is a no-op.
     fn on_unhandled(&mut self, _event: &Event) {}
+
+    /// Optional: dispatch through **typed** [`awase::Hotkey`] chords instead
+    /// of the string [`KeyCombo`] path.
+    ///
+    /// Returning `Some` opts this app into the typed runtime; the default
+    /// `None` keeps [`Self::keymap`] as the dispatch source, so every
+    /// existing implementation is untouched.
+    ///
+    /// # Why an app would want this
+    ///
+    /// A `KeyCombo` is a key *name* plus modifier *names*. An app that
+    /// authors its chords as typed values must therefore project them into
+    /// this crate's spelling before anything can match, and that projection
+    /// is where chords go to die: banken carried 199 lines of it, refusing
+    /// `space` outright because the two vocabularies had no safe translation
+    /// for it. On this path the authored chord and the delivered chord are
+    /// the same type, so there is nothing to project and nothing to drift.
+    ///
+    /// # Modes
+    ///
+    /// Return a different [`awase::KeyMode`] as the app's state changes and
+    /// the active bindings change with it — that is how a search prompt stops
+    /// `j` from moving the cursor. Unclaimed printable characters arrive at
+    /// [`Self::on_text`].
+    fn hotkey_map(&self) -> Option<&awase::KeyMode<Self::Action>> {
+        None
+    }
+
+    /// Optional: a printable character that no binding claimed.
+    ///
+    /// **Only fires on the typed path** (when [`Self::hotkey_map`] returns
+    /// `Some`). Apps on the string path keep receiving character events
+    /// through [`Self::on_unhandled`] exactly as before — routing them here
+    /// too would change behaviour under existing implementations, which this
+    /// addition must not do.
+    ///
+    /// This is the hook that makes a text field possible without the keymap
+    /// swallowing its letters: a search mode binds only Escape/Return/
+    /// Backspace, and every other key misses and lands here.
+    fn on_text(&mut self, _c: char) {}
+}
+
+/// Resolve one event through an app's typed keymap.
+///
+/// Returns the action to apply, or `None` when nothing claimed the event —
+/// in which case the caller routes to `on_text`/`on_unhandled`. Split out so
+/// the sync and async runtimes cannot drift on dispatch semantics.
+pub(crate) fn typed_dispatch<A>(mode: &awase::KeyMode<A>, evt: &Event) -> Option<A>
+where
+    A: Clone,
+{
+    let hk = crate::event::hotkey_from_crossterm(evt)?;
+    let binding = mode.find_binding(&hk, &awase::MatchContext::default())?;
+    Some(binding.action.clone())
+}
+
+/// The printable character an unclaimed key event carries, if any.
+///
+/// Deliberately excludes ctrl/alt/super-modified keys: those are chords an
+/// app simply has not bound, not text the operator meant to type. Shift IS
+/// allowed through, because a capital letter is text.
+pub(crate) fn text_char(evt: &Event) -> Option<char> {
+    use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
+    let Event::Key(k) = evt else { return None };
+    if k.kind != KeyEventKind::Press {
+        return None;
+    }
+    if k.modifiers
+        .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT | KeyModifiers::SUPER)
+    {
+        return None;
+    }
+    match k.code {
+        KeyCode::Char(c) => Some(c),
+        _ => None,
+    }
 }
 
 /// Run an [`App`] to completion.
@@ -85,7 +161,21 @@ where
             term.clear()?;
             term.flush()?;
             app.on_unhandled(&evt);
+        } else if let Some(action) = app.hotkey_map().and_then(|m| typed_dispatch(m, &evt)) {
+            // Typed path. `typed_dispatch` clones the action out, which ends
+            // the `hotkey_map()` borrow before `handle(&mut self)`.
+            app.handle(&action);
+        } else if app.hotkey_map().is_some() {
+            // Typed path, nothing claimed it: a printable character is text,
+            // anything else falls through as before.
+            if let Some(c) = text_char(&evt) {
+                app.on_text(c);
+            } else {
+                app.on_unhandled(&evt);
+            }
         } else {
+            // String path — unchanged.
+            //
             // Have to clone the action out: the borrow of `app` via `keymap()`
             // would otherwise overlap with `handle(&mut self)`. Most app
             // actions are small (Copy/Clone enums), so this is free in practice.
@@ -119,7 +209,7 @@ mod tests {
     // We can't run a real terminal in tests, but we can exercise the
     // trait wiring + keymap dispatch logic by calling the methods directly.
 
-    #[derive(Clone, Copy, PartialEq, Eq)]
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
     enum Act {
         Bump,
         Quit,
@@ -161,6 +251,101 @@ mod tests {
         fn should_quit(&self) -> bool {
             self.done
         }
+    }
+
+    // ── the typed dispatch path ─────────────────────────────────────────
+
+    fn press(code: crossterm::event::KeyCode) -> Event {
+        Event::Key(crossterm::event::KeyEvent::new(
+            code,
+            crossterm::event::KeyModifiers::NONE,
+        ))
+    }
+
+    fn typed_mode() -> awase::KeyMode<Act> {
+        let mut m: awase::KeyMode<Act> = awase::KeyMode::typed("default", false);
+        m.try_bind(awase::Binding::new(
+            awase::Hotkey::new(awase::Modifiers::NONE, awase::Key::Space),
+            Act::Bump,
+        ))
+        .expect("free");
+        m.try_bind(awase::Binding::new(
+            awase::Hotkey::new(awase::Modifiers::NONE, awase::Key::Q),
+            Act::Quit,
+        ))
+        .expect("free");
+        m
+    }
+
+    #[test]
+    fn typed_dispatch_resolves_a_real_keypress() {
+        let m = typed_mode();
+        assert_eq!(
+            typed_dispatch(&m, &press(crossterm::event::KeyCode::Char('q'))),
+            Some(Act::Quit)
+        );
+    }
+
+    /// The fix this path exists for. The string fixture above binds
+    /// `KeyCombo::key("space")`, which egaku-term can NEVER deliver — it
+    /// names the spacebar `" "`. That binding is dead, and the test around it
+    /// passes only because it looks the same wrong string back up.
+    ///
+    /// On the typed path the spacebar is `Key::Space` and it actually fires.
+    #[test]
+    fn the_spacebar_dispatches_on_the_typed_path_and_is_dead_on_the_string_path() {
+        let m = typed_mode();
+        assert_eq!(
+            typed_dispatch(&m, &press(crossterm::event::KeyCode::Char(' '))),
+            Some(Act::Bump),
+            "typed: the spacebar fires"
+        );
+
+        // …and the string fixture's binding is unreachable from a real press.
+        let c = Counter::new();
+        let delivered = crate::event::from_crossterm(&press(crossterm::event::KeyCode::Char(' ')))
+            .expect("the string path delivers something");
+        assert_eq!(delivered.key, " ", "delivered name is a literal space");
+        assert!(
+            c.keymap().lookup(&delivered).is_none(),
+            "the `space` binding in the fixture is DEAD — nothing delivers that name"
+        );
+    }
+
+    #[test]
+    fn typed_dispatch_returns_none_for_an_unbound_key() {
+        let m = typed_mode();
+        assert_eq!(
+            typed_dispatch(&m, &press(crossterm::event::KeyCode::Char('z'))),
+            None
+        );
+    }
+
+    #[test]
+    fn an_unclaimed_printable_character_is_text() {
+        // What makes a search prompt possible: the key missed the map, so it
+        // is text rather than a lost event.
+        assert_eq!(
+            text_char(&press(crossterm::event::KeyCode::Char('z'))),
+            Some('z')
+        );
+        assert_eq!(
+            text_char(&press(crossterm::event::KeyCode::Char('Z'))),
+            Some('Z'),
+            "shift is text, not a chord"
+        );
+    }
+
+    #[test]
+    fn a_modified_key_is_not_text() {
+        // ctrl+z is a chord the app has not bound, not something typed.
+        let e = Event::Key(crossterm::event::KeyEvent::new(
+            crossterm::event::KeyCode::Char('z'),
+            crossterm::event::KeyModifiers::CONTROL,
+        ));
+        assert_eq!(text_char(&e), None);
+        // …and neither is a non-character key.
+        assert_eq!(text_char(&press(crossterm::event::KeyCode::Up)), None);
     }
 
     #[test]
