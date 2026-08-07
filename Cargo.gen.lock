@@ -1,11 +1,49 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "11115fe5dfa6a85b49e77f13e16ef486e343ac0e51fd8d8439a81fdbbd8a37f0",
+  "cargo_lock_sha256": "3557206894807205854e898cd795e57e569bfecdb79fe3c039571b8a14b5f8c9",
   "manifest_sha256": {
-    "Cargo.toml": "f00413bf93fee5127c7704e5b4ce7bfbadf6cab40376d9abf0c87205122bc458"
+    "Cargo.toml": "6d800b1d9f27c8656c508091a52d4d05186f1bae0ffbd646dc1ca6ca631ff083"
   },
   "target_resolves": {
     "base": {
+      "awase-0.1.6": {
+        "runtime_dependencies": [
+          {
+            "name": "serde",
+            "package_key": "serde-1.0.229",
+            "kind": "normal",
+            "features": [
+              "derive"
+            ],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "thiserror",
+            "package_key": "thiserror-2.0.19",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "tracing",
+            "package_key": "tracing-0.1.44",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          }
+        ],
+        "build_dependencies": [],
+        "features": []
+      },
       "bitflags-2.13.1": {
         "runtime_dependencies": [],
         "build_dependencies": [],
@@ -157,6 +195,16 @@
       },
       "egaku-term-0.3.6": {
         "runtime_dependencies": [
+          {
+            "name": "awase",
+            "package_key": "awase-0.1.6",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
           {
             "name": "crossterm",
             "package_key": "crossterm-0.28.1",
@@ -1660,6 +1708,9 @@
     }
   },
   "per_crate": {
+    "awase-0.1.6": {
+      "edition": "2024"
+    },
     "bitflags-2.13.1": {
       "edition": "2021"
     },

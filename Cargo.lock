@@ -3,6 +3,17 @@
 version = 4
 
 [[package]]
+name = "awase"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "588fdf28cd7b99c3c5b3711cbd473e1a36011834e55c56285fad220125660a55"
+dependencies = [
+ "serde",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -57,6 +68,7 @@ dependencies = [
 name = "egaku-term"
 version = "0.3.6"
 dependencies = [
+ "awase",
  "crossterm",
  "egaku",
  "futures-util",

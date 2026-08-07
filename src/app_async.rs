@@ -105,6 +105,25 @@ pub trait AsyncApp: Send {
     }
 
     /// Optional fall-through for events the keymap didn't resolve.
+    /// Optional: dispatch through **typed** [`awase::Hotkey`] chords instead
+    /// of the string [`KeyMap`] path.
+    ///
+    /// Async peer of [`crate::App::hotkey_map`] — see its doc for why an app
+    /// wants this. Returning `Some` opts in; the default `None` keeps
+    /// [`Self::keymap`] as the dispatch source, so existing implementations
+    /// are untouched.
+    fn hotkey_map(&self) -> Option<&awase::KeyMode<Self::Action>> {
+        None
+    }
+
+    /// Optional: a printable character no binding claimed.
+    ///
+    /// Async peer of [`crate::App::on_text`], and likewise **only fires on
+    /// the typed path**.
+    fn on_text(&mut self, _c: char) -> impl std::future::Future<Output = Result<()>> + Send {
+        async { Ok(()) }
+    }
+
     fn on_unhandled(
         &mut self,
         _event: &Event,
@@ -171,7 +190,21 @@ where
                     term.clear()?;
                     term.flush()?;
                     app.on_unhandled(&evt).await?;
+                } else if let Some(action) =
+                    app.hotkey_map().and_then(|m| crate::app::typed_dispatch(m, &evt))
+                {
+                    // Typed path. The action is cloned out inside
+                    // `typed_dispatch`, ending the borrow before `handle`.
+                    app.handle(&action).await?;
+                } else if app.hotkey_map().is_some() {
+                    // Typed path, unclaimed: printable characters are text.
+                    if let Some(c) = crate::app::text_char(&evt) {
+                        app.on_text(c).await?;
+                    } else {
+                        app.on_unhandled(&evt).await?;
+                    }
                 } else {
+                    // String path — unchanged.
                     if let Some(combo) = from_crossterm(&evt)
                         && let Some(action) = app.keymap().lookup(&combo).cloned()
                     {
