@@ -401,12 +401,14 @@ mod typed_delivery_tests {
             to_hotkey(&press(KeyCode::Char(' '), KeyModifiers::NONE)),
             Some(Hotkey::new(AMods::NONE, AKey::Space))
         );
-        // The string path names it a literal space — unwritable in practice.
+        // The string path names it `space` too, since egaku `c502920`.
+        // It used to deliver a literal `" "`, which no binding could be
+        // written to match — the defect that commit closed.
         assert_eq!(
             from_key_event(&press(KeyCode::Char(' '), KeyModifiers::NONE))
                 .expect("delivers")
                 .key,
-            " "
+            "space"
         );
     }
 

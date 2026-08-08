@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "b0d69e2249ff9f454efdbdaf9166faeafc4a75260418275d701ebb9b28b405b9",
+  "cargo_lock_sha256": "4d8a1c8d08f6eb583228a4ed4b2cc3eb7b86d701662afc31632a9462627baea7",
   "manifest_sha256": {
     "Cargo.toml": "6693f42d8130626b2efeab9b7a66a0f8b53701be6c550cca145c0f35273a3cd2"
   },
@@ -135,8 +135,18 @@
           "windows"
         ]
       },
-      "egaku-0.1.9": {
+      "egaku-0.1.10": {
         "runtime_dependencies": [
+          {
+            "name": "awase",
+            "package_key": "awase-0.1.7",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
           {
             "name": "serde",
             "package_key": "serde-1.0.229",
@@ -217,7 +227,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.9",
+            "package_key": "egaku-0.1.10",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1720,7 +1730,7 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.9": {
+    "egaku-0.1.10": {
       "edition": "2024"
     },
     "egaku-term-0.3.8": {
