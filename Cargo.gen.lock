@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "4d8a1c8d08f6eb583228a4ed4b2cc3eb7b86d701662afc31632a9462627baea7",
+  "cargo_lock_sha256": "f3173ba0d4e1f103806b4380e3343ba71384275b35a84da5ded5be357fb37a2e",
   "manifest_sha256": {
-    "Cargo.toml": "6693f42d8130626b2efeab9b7a66a0f8b53701be6c550cca145c0f35273a3cd2"
+    "Cargo.toml": "580a3dfb0ebf902a64c530f94c3bce12dc5ded6a0b925c5874a65bf975a7faea"
   },
   "target_resolves": {
     "base": {
@@ -22,7 +22,7 @@
           },
           {
             "name": "thiserror",
-            "package_key": "thiserror-2.0.19",
+            "package_key": "thiserror-2.0.20",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -161,7 +161,7 @@
           },
           {
             "name": "thiserror",
-            "package_key": "thiserror-2.0.19",
+            "package_key": "thiserror-2.0.20",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -203,7 +203,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.8": {
+      "egaku-term-0.3.9": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -237,7 +237,7 @@
           },
           {
             "name": "thiserror",
-            "package_key": "thiserror-2.0.19",
+            "package_key": "thiserror-2.0.20",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -839,11 +839,11 @@
           "proc-macro"
         ]
       },
-      "thiserror-2.0.19": {
+      "thiserror-2.0.20": {
         "runtime_dependencies": [
           {
             "name": "thiserror_impl",
-            "package_key": "thiserror-impl-2.0.19",
+            "package_key": "thiserror-impl-2.0.20",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -858,7 +858,7 @@
           "std"
         ]
       },
-      "thiserror-impl-2.0.19": {
+      "thiserror-impl-2.0.20": {
         "runtime_dependencies": [
           {
             "name": "proc_macro2",
@@ -1733,7 +1733,7 @@
     "egaku-0.1.10": {
       "edition": "2024"
     },
-    "egaku-term-0.3.8": {
+    "egaku-term-0.3.9": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
@@ -1828,11 +1828,11 @@
     "syn-3.0.3": {
       "edition": "2021"
     },
-    "thiserror-2.0.19": {
+    "thiserror-2.0.20": {
       "edition": "2021",
       "build_script": "build.rs"
     },
-    "thiserror-impl-2.0.19": {
+    "thiserror-impl-2.0.20": {
       "edition": "2021",
       "proc_macro": true
     },
