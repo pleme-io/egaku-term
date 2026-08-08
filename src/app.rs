@@ -291,9 +291,19 @@ mod tests {
     /// names the spacebar `" "`. That binding is dead, and the test around it
     /// passes only because it looks the same wrong string back up.
     ///
-    /// On the typed path the spacebar is `Key::Space` and it actually fires.
+    /// The spacebar fires on BOTH paths.
+    ///
+    /// This test used to be named `..._and_is_dead_on_the_string_path` and
+    /// asserted the opposite of its second half: a real press delivered the
+    /// key name `" "`, so the `space` binding anyone would actually write was
+    /// unreachable, and that brokenness was pinned here rather than fixed.
+    ///
+    /// It is fixed upstream (egaku `c502920`): `KeyCombo` canonicalises an
+    /// all-whitespace key to `space` before parsing, so the two spellings are
+    /// one value. The characterisation is inverted rather than deleted —
+    /// what was pinned as broken is now pinned as working.
     #[test]
-    fn the_spacebar_dispatches_on_the_typed_path_and_is_dead_on_the_string_path() {
+    fn the_spacebar_dispatches_on_both_the_typed_and_string_paths() {
         let m = typed_mode();
         assert_eq!(
             typed_dispatch(&m, &press(crossterm::event::KeyCode::Char(' '))),
@@ -301,14 +311,16 @@ mod tests {
             "typed: the spacebar fires"
         );
 
-        // …and the string fixture's binding is unreachable from a real press.
         let c = Counter::new();
         let delivered = crate::event::from_crossterm(&press(crossterm::event::KeyCode::Char(' ')))
             .expect("the string path delivers something");
-        assert_eq!(delivered.key, " ", "delivered name is a literal space");
+        assert_eq!(
+            delivered.key, "space",
+            "a real press is delivered under the name a binding can be written with"
+        );
         assert!(
-            c.keymap().lookup(&delivered).is_none(),
-            "the `space` binding in the fixture is DEAD — nothing delivers that name"
+            c.keymap().lookup(&delivered).is_some(),
+            "the `space` binding in the fixture is now REACHABLE from a real press"
         );
     }
 
