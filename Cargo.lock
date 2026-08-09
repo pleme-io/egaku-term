@@ -53,9 +53,9 @@ dependencies = [
 
 [[package]]
 name = "egaku"
-version = "0.1.11"
+version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "303306ced4abddc91c82af7327368ed92a7b1122f939ee148fe8f168f40caad8"
+checksum = "e63eab84c59ae1118c0e091cd0e11a3bf6d5ab5affa78c4f0ce3a9e0a2d5e418"
 dependencies = [
  "awase",
  "serde",
@@ -67,7 +67,7 @@ dependencies = [
 
 [[package]]
 name = "egaku-term"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "awase",
  "crossterm",
