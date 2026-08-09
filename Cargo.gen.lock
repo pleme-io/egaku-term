@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "f3173ba0d4e1f103806b4380e3343ba71384275b35a84da5ded5be357fb37a2e",
+  "cargo_lock_sha256": "840aa9cb5cc997613721c11c21505a49b130cc9a38135a10f01880838dff48ec",
   "manifest_sha256": {
-    "Cargo.toml": "580a3dfb0ebf902a64c530f94c3bce12dc5ded6a0b925c5874a65bf975a7faea"
+    "Cargo.toml": "10b5c2239cfde6fe06989805dfd94ebb40cc4379622576be2d4257730ac133c5"
   },
   "target_resolves": {
     "base": {
-      "awase-0.1.7": {
+      "awase-0.1.9": {
         "runtime_dependencies": [
           {
             "name": "serde",
@@ -135,11 +135,11 @@
           "windows"
         ]
       },
-      "egaku-0.1.10": {
+      "egaku-0.1.11": {
         "runtime_dependencies": [
           {
             "name": "awase",
-            "package_key": "awase-0.1.7",
+            "package_key": "awase-0.1.9",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -203,11 +203,11 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.9": {
+      "egaku-term-0.3.10": {
         "runtime_dependencies": [
           {
             "name": "awase",
-            "package_key": "awase-0.1.7",
+            "package_key": "awase-0.1.9",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -227,7 +227,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.10",
+            "package_key": "egaku-0.1.11",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1718,7 +1718,7 @@
     }
   },
   "per_crate": {
-    "awase-0.1.7": {
+    "awase-0.1.9": {
       "edition": "2024"
     },
     "bitflags-2.13.1": {
@@ -1730,10 +1730,10 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.10": {
+    "egaku-0.1.11": {
       "edition": "2024"
     },
-    "egaku-term-0.3.9": {
+    "egaku-term-0.3.10": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
