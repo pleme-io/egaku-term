@@ -207,7 +207,7 @@ pub fn hotkey_from_crossterm(event: &Event) -> Option<awase::Hotkey> {
 /// events through [`to_hotkey`], **the same function the runtime uses**, and
 /// see what comes out. Nothing here to update when a key is added.
 pub mod testing {
-    use super::{to_hotkey, KeyCode, KeyEvent, KeyModifiers};
+    use super::{KeyCode, KeyEvent, KeyModifiers, to_hotkey};
     use std::collections::HashSet;
 
     /// The modifier combinations a terminal reports. Not the full power set:
@@ -446,7 +446,13 @@ mod typed_delivery_tests {
     fn the_probe_finds_a_plausible_keyboard() {
         let d = testing::deliverable();
         assert!(d.len() > 50, "only {} — the probe is broken", d.len());
-        for k in [AKey::Q, AKey::Escape, AKey::Return, AKey::Slash, AKey::Space] {
+        for k in [
+            AKey::Q,
+            AKey::Escape,
+            AKey::Return,
+            AKey::Slash,
+            AKey::Space,
+        ] {
             assert!(
                 d.contains(&Hotkey::new(AMods::NONE, k)),
                 "{k} should be deliverable"

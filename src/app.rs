@@ -78,10 +78,86 @@ pub trait App {
     /// too would change behaviour under existing implementations, which this
     /// addition must not do.
     ///
+
+    /// What to do with a key **no binding claimed**, on the typed path.
+    ///
+    /// Defaulted to [`Unclaimed::Text`], which is exactly the behaviour every
+    /// app had before this existed — so adding it moved nobody. Override it,
+    /// per stance, when unbound must mean *undefined* rather than *typed*:
+    /// in vim's Normal mode `d` is a verb, not a character.
+    ///
+    /// It takes `&self` and is read once per event, so a modal app answers
+    /// from whatever it currently is and the runtime holds no mode state.
+    fn unclaimed(&self) -> Unclaimed {
+        Unclaimed::Text
+    }
+
     /// This is the hook that makes a text field possible without the keymap
     /// swallowing its letters: a search mode binds only Escape/Return/
     /// Backspace, and every other key misses and lands here.
     fn on_text(&mut self, _c: char) {}
+}
+
+/// What the runtime does with a key **no binding claimed**, on the typed
+/// (`hotkey_map`) dispatch path.
+///
+/// # Why this is egaku-term's own axis and not `awase::KeyMode::passthrough`
+///
+/// `awase::KeyMode` already carries a `passthrough` flag, and honouring it
+/// looks like free money. It would be a fleet-wide regression delivered
+/// through a semver-*compatible* minor, which no version number protects
+/// against.
+///
+/// Measured 2026-08-09: **every** typed-path `KeyMode` in the fleet is
+/// constructed `passthrough: false` — pauta, the alicerce wizard, acervo-ui's
+/// `normal` *and* `search` modes, banken's picker and app, and this crate's own
+/// test app. acervo-ui's `search` mode binds only Escape/Return/Backspace
+/// *precisely so* every other key misses into `on_text`. Reading the flag would
+/// have silently killed text entry in five applications the next time they ran
+/// `cargo update`.
+///
+/// So the axis is named here, defaults to today's behaviour, and an app opts in
+/// deliberately.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Unclaimed {
+    /// A printable goes to `on_text`; anything else goes to `on_unhandled`.
+    /// **The default, and exactly what every existing app already gets.**
+    #[default]
+    Text,
+    /// Everything goes to `on_unhandled` — nothing is treated as text.
+    ///
+    /// What a modal app wants in a command stance: in vim's Normal mode `d` is
+    /// a verb, not a character, and an unbound key must not silently land in
+    /// the buffer. An app that returns this and does not override
+    /// `on_unhandled` swallows the key, which is the correct default for a
+    /// stance where unbound means undefined.
+    Consume,
+}
+
+/// Where an **unclaimed** key goes. Returned by [`route_unclaimed`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum UnclaimedRoute {
+    /// Deliver this character to `on_text`.
+    Text(char),
+    /// Hand the whole event to `on_unhandled`.
+    Unhandled,
+}
+
+/// The one place the unclaimed-key decision is made.
+///
+/// **Both runtimes call this, and so does its test.** An earlier version of
+/// that test re-implemented the branch and asserted against its own copy —
+/// which passes whatever the runtime does, and is the same vacuity that let a
+/// table render UIDs for weeks behind three green tests. One function, one
+/// caller shape, no mirror.
+pub(crate) fn route_unclaimed(axis: Unclaimed, evt: &Event) -> UnclaimedRoute {
+    match axis {
+        Unclaimed::Consume => UnclaimedRoute::Unhandled,
+        Unclaimed::Text => match text_char(evt) {
+            Some(c) => UnclaimedRoute::Text(c),
+            None => UnclaimedRoute::Unhandled,
+        },
+    }
 }
 
 /// Resolve one event through an app's typed keymap.
@@ -166,6 +242,11 @@ where
             // the `hotkey_map()` borrow before `handle(&mut self)`.
             app.handle(&action);
         } else if app.hotkey_map().is_some() {
+            // Typed path, unclaimed. WHICH of the two readings is the app's
+            // to declare; the default is `Text`, i.e. unchanged.
+            if app.unclaimed() == Unclaimed::Consume {
+                app.on_unhandled(&evt);
+            } else
             // Typed path, nothing claimed it: a printable character is text,
             // anything else falls through as before.
             if let Some(c) = text_char(&evt) {
@@ -376,5 +457,127 @@ mod tests {
         let mut c = Counter::new();
         c.on_unhandled(&Event::Resize(80, 24));
         assert_eq!(c.count, 0);
+    }
+}
+
+#[cfg(test)]
+mod unclaimed_tests {
+    use super::*;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    enum Act {
+        Quit,
+    }
+
+    /// An app that records where unclaimed keys landed, and lets a test pick
+    /// the axis.
+    struct Probe {
+        mode: awase::KeyMode<Act>,
+        unclaimed: Unclaimed,
+        text: Vec<char>,
+        unhandled: usize,
+    }
+
+    impl Probe {
+        fn new(unclaimed: Unclaimed) -> Self {
+            // Exactly the shape acervo-ui's `search` mode has: one binding,
+            // `passthrough: false`, everything else expected to miss.
+            let mut mode: awase::KeyMode<Act> = awase::KeyMode::typed("probe", false);
+            let _ = mode.add_binding(awase::Binding::new(
+                awase::Hotkey::new(awase::Modifiers::NONE, awase::Key::Escape),
+                Act::Quit,
+            ));
+            Self {
+                mode,
+                unclaimed,
+                text: Vec::new(),
+                unhandled: 0,
+            }
+        }
+    }
+
+    impl App for Probe {
+        type Action = Act;
+        fn keymap(&self) -> &KeyMap<Act> {
+            static EMPTY: std::sync::OnceLock<KeyMap<Act>> = std::sync::OnceLock::new();
+            EMPTY.get_or_init(KeyMap::new)
+        }
+        fn hotkey_map(&self) -> Option<&awase::KeyMode<Act>> {
+            Some(&self.mode)
+        }
+        fn unclaimed(&self) -> Unclaimed {
+            self.unclaimed
+        }
+        fn handle(&mut self, _a: &Act) {}
+        fn draw(&self, _f: &mut Buffer) -> Result<()> {
+            Ok(())
+        }
+        fn should_quit(&self) -> bool {
+            false
+        }
+        fn on_text(&mut self, c: char) {
+            self.text.push(c);
+        }
+        fn on_unhandled(&mut self, _e: &Event) {
+            self.unhandled += 1;
+        }
+    }
+
+    /// Drive one unclaimed printable through **the function `run` itself
+    /// calls** — never a re-implementation of it, which would assert against
+    /// this test's own copy of the branch and pass whatever the runtime does.
+    fn feed(app: &mut Probe, c: char) {
+        let evt = Event::Key(KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE));
+        assert!(
+            typed_dispatch(app.hotkey_map().unwrap(), &evt).is_none(),
+            "the probe key must be UNCLAIMED or this test proves nothing",
+        );
+        match route_unclaimed(app.unclaimed(), &evt) {
+            UnclaimedRoute::Text(ch) => app.on_text(ch),
+            UnclaimedRoute::Unhandled => app.on_unhandled(&evt),
+        }
+    }
+
+    /// **THE REGRESSION GATE, and it is the reason this axis exists at all.**
+    /// Every typed-path `KeyMode` in the fleet is built `passthrough: false`,
+    /// and five apps rely on unclaimed printables reaching `on_text` —
+    /// acervo-ui's search mode binds only Escape/Return/Backspace precisely so
+    /// other keys miss into it. The DEFAULT must be that behaviour, or a
+    /// `cargo update` silently kills text entry in all of them.
+    #[test]
+    fn the_default_still_delivers_unclaimed_printables_as_text() {
+        assert_eq!(Unclaimed::default(), Unclaimed::Text, "the default itself");
+        let mut p = Probe::new(Unclaimed::default());
+        feed(&mut p, 'q');
+        feed(&mut p, 'j');
+        assert_eq!(p.text, vec!['q', 'j'], "typed, exactly as before");
+        assert_eq!(p.unhandled, 0);
+    }
+
+    /// The opt-in: in a command stance nothing unclaimed is text, so `d` is a
+    /// verb rather than a character landing in the buffer.
+    #[test]
+    fn consume_routes_every_unclaimed_key_away_from_text() {
+        let mut p = Probe::new(Unclaimed::Consume);
+        feed(&mut p, 'd');
+        feed(&mut p, 'w');
+        assert!(p.text.is_empty(), "nothing may reach the buffer");
+        assert_eq!(p.unhandled, 2, "the app still sees them, and may swallow");
+    }
+
+    /// A CLAIMED key is unaffected by the axis — it dispatches either way.
+    /// Without this, `Consume` could be "swallow everything" and pass.
+    #[test]
+    fn a_bound_chord_still_dispatches_under_either_axis() {
+        for axis in [Unclaimed::Text, Unclaimed::Consume] {
+            let p = Probe::new(axis);
+            let evt = Event::Key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+            assert_eq!(
+                typed_dispatch(p.hotkey_map().unwrap(), &evt),
+                Some(Act::Quit),
+                "{axis:?}",
+            );
+        }
     }
 }

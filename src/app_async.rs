@@ -116,6 +116,19 @@ pub trait AsyncApp: Send {
         None
     }
 
+    /// What to do with a key **no binding claimed**, on the typed path.
+    ///
+    /// Defaulted to [`Unclaimed::Text`], which is exactly the behaviour every
+    /// app had before this existed — so adding it moved nobody. Override it,
+    /// per stance, when unbound must mean *undefined* rather than *typed*:
+    /// in vim's Normal mode `d` is a verb, not a character.
+    ///
+    /// It takes `&self` and is read once per event, so a modal app answers
+    /// from whatever it currently is and the runtime holds no mode state.
+    fn unclaimed(&self) -> Unclaimed {
+        Unclaimed::Text
+    }
+
     /// Optional: a printable character no binding claimed.
     ///
     /// Async peer of [`crate::App::on_text`], and likewise **only fires on
@@ -190,18 +203,19 @@ where
                     term.clear()?;
                     term.flush()?;
                     app.on_unhandled(&evt).await?;
-                } else if let Some(action) =
-                    app.hotkey_map().and_then(|m| crate::app::typed_dispatch(m, &evt))
+                } else if let Some(action) = app
+                    .hotkey_map()
+                    .and_then(|m| crate::app::typed_dispatch(m, &evt))
                 {
                     // Typed path. The action is cloned out inside
                     // `typed_dispatch`, ending the borrow before `handle`.
                     app.handle(&action).await?;
                 } else if app.hotkey_map().is_some() {
-                    // Typed path, unclaimed: printable characters are text.
-                    if let Some(c) = crate::app::text_char(&evt) {
-                        app.on_text(c).await?;
-                    } else {
-                        app.on_unhandled(&evt).await?;
+                    // Typed path, unclaimed. The decision is made in ONE
+                    // place, shared with the sync runtime and with its test.
+                    match crate::app::route_unclaimed(app.unclaimed(), &evt) {
+                        crate::app::UnclaimedRoute::Text(c) => app.on_text(c).await?,
+                        crate::app::UnclaimedRoute::Unhandled => app.on_unhandled(&evt).await?,
                     }
                 } else {
                     // String path — unchanged.
