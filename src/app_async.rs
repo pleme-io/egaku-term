@@ -35,6 +35,7 @@ use crossterm::event::{Event, EventStream};
 use egaku::KeyMap;
 use futures_util::StreamExt;
 
+use crate::app::Unclaimed;
 use crate::buffer::Buffer;
 use crate::error::Result;
 use crate::event::from_crossterm;
