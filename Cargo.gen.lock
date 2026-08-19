@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "45d3c278990333c6aeb3a35b1c988997bd69bcf0ad8de83d79cb0f3a335881e0",
+  "cargo_lock_sha256": "7de62d48cff0a2558e018c61bfd93b07258f1fb0fb8f3153be84cdaa5550bf79",
   "manifest_sha256": {
-    "Cargo.toml": "bfc492567f297f2dc4d18ed814d3b9909a4b965be064c5a2cf3871c5677f7b40"
+    "Cargo.toml": "4b08459ba7993f7f845a49bdd245e5f8225bc9f6d2237d1f861702d12087de8d"
   },
   "target_resolves": {
     "base": {
@@ -135,7 +135,7 @@
           "windows"
         ]
       },
-      "egaku-0.1.12": {
+      "egaku-0.1.14": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -154,6 +154,16 @@
             "features": [
               "derive"
             ],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "shibori",
+            "package_key": "shibori-0.1.1",
+            "kind": "normal",
+            "features": [],
             "uses_default_features": true,
             "optional": false,
             "target": null,
@@ -198,6 +208,16 @@
             "optional": false,
             "target": null,
             "tree": "target"
+          },
+          {
+            "name": "zeroize",
+            "package_key": "zeroize-1.9.0",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
           }
         ],
         "build_dependencies": [],
@@ -227,7 +247,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.12",
+            "package_key": "egaku-0.1.14",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -647,6 +667,11 @@
           "default",
           "std"
         ]
+      },
+      "shibori-0.1.1": {
+        "runtime_dependencies": [],
+        "build_dependencies": [],
+        "features": []
       },
       "signal-hook-0.3.18": {
         "runtime_dependencies": [
@@ -1085,6 +1110,14 @@
         "build_dependencies": [],
         "features": [
           "cjk",
+          "default"
+        ]
+      },
+      "zeroize-1.9.0": {
+        "runtime_dependencies": [],
+        "build_dependencies": [],
+        "features": [
+          "alloc",
           "default"
         ]
       },
@@ -1730,7 +1763,7 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.12": {
+    "egaku-0.1.14": {
       "edition": "2024"
     },
     "egaku-term-0.3.11": {
@@ -1809,6 +1842,9 @@
       "edition": "2021",
       "build_script": "build.rs"
     },
+    "shibori-0.1.1": {
+      "edition": "2024"
+    },
     "signal-hook-0.3.18": {
       "edition": "2018",
       "build_script": "build.rs"
@@ -1861,6 +1897,9 @@
     },
     "unicode-width-0.2.2": {
       "edition": "2021"
+    },
+    "zeroize-1.9.0": {
+      "edition": "2024"
     },
     "zmij-1.0.23": {
       "edition": "2021",

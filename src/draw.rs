@@ -16,7 +16,10 @@
 // `pending-egaku-bump:` at the top of CLAUDE.md for the clearing chain, and see
 // `tests/pending_egaku_bump.rs` for why the compiler — not a test — is the gate
 // in this direction. (A signpost, not a check; the hard gate is this import.)
-use egaku::{ListView, Modal, Rect, ScrollView, SplitPane, TabBar, TableRow, TableView, TextInput};
+use egaku::{
+    ListView, Modal, Rect, ScrollView, SecretInput, SplitPane, TabBar, TableRow, TableView,
+    TextInput,
+};
 use unicode_width::UnicodeWidthStr;
 
 use crate::buffer::Buffer;
@@ -113,6 +116,12 @@ impl Draw for ListView {
 impl Draw for TextInput {
     fn draw(&self, buf: &mut Buffer, rect: Rect, palette: &Palette) {
         text_input_with(buf, rect, self, self.is_focused(), palette);
+    }
+}
+
+impl Draw for SecretInput {
+    fn draw(&self, buf: &mut Buffer, rect: Rect, palette: &Palette) {
+        secret_input_with(buf, rect, self, self.is_focused(), palette);
     }
 }
 
@@ -423,6 +432,72 @@ pub fn text_input_with(
         let cursor_glyph = text[cursor_byte..].chars().next().unwrap_or(' ');
         let cursor_style = Style::default().fg(fg).reversed();
         buf.set_char(cursor_col, y, cursor_glyph, cursor_style);
+    }
+}
+
+// ---------- SecretInput ------------------------------------------------------
+
+/// The glyph one hidden grapheme is drawn as.
+///
+/// **ASCII `*`, deliberately, and not the prettier `•` (U+2022).** This drawer's
+/// whole reason to exist is the tier that keeps a machine loginnable when the
+/// GPU face cannot start — a bare Linux console, whose default font
+/// (`Lat2-Terminus16` on this fleet) is not guaranteed to carry U+2022. A mask
+/// glyph that renders as a replacement box on the one surface that is supposed
+/// to be the fallback would be a self-defeating choice of prettiness.
+const MASK_GLYPH: char = '*';
+
+/// Draw a [`SecretInput`] as a row of mask cells.
+///
+/// ★ **This function never sees the secret.** It reads
+/// [`SecretInput::mask_len`] and [`SecretInput::cursor_cell`] — two integers —
+/// and there is deliberately no call to `expose_secret()` anywhere in it. That
+/// is the property worth protecting when editing this: a drawer that reaches
+/// for the text in order to measure it has re-opened the leak the type was
+/// built to close, and it would still compile.
+///
+/// Contrast [`text_input_with`], which passes `input.text()` straight to
+/// [`Buffer::set_stringn`] — correct there, and exactly what must not happen
+/// here.
+pub fn secret_input_with(
+    buf: &mut Buffer,
+    rect: Rect,
+    input: &SecretInput,
+    focused: bool,
+    palette: &Palette,
+) {
+    let (x, y, w, _h) = to_cell_rect(rect);
+    if w == 0 {
+        return;
+    }
+
+    let fg = if focused {
+        palette.foreground
+    } else {
+        palette.muted
+    };
+    let style = Style::default().fg(fg);
+
+    // One mask cell per grapheme, clipped to the rect. `mask_len` is already
+    // grapheme-counted, so a combining sequence or an emoji is one cell here
+    // exactly as it is one cell to the person typing.
+    let cells = usize::from(w).min(input.mask_len());
+    let mask: String = core::iter::repeat_n(MASK_GLYPH, cells).collect();
+    buf.set_stringn(x, y, &mask, w, style);
+
+    if focused {
+        // The caret sits at the cursor's CELL index — no byte arithmetic is
+        // possible here, which is the point.
+        let cursor_cell = u16::try_from(input.cursor_cell()).unwrap_or(u16::MAX);
+        let cursor_col = x + cursor_cell.min(w.saturating_sub(1));
+        // Past the last mask cell the caret has no glyph under it; a space keeps
+        // the reversed block visible without inventing a character.
+        let glyph = if input.cursor_cell() < input.mask_len() {
+            MASK_GLYPH
+        } else {
+            ' '
+        };
+        buf.set_char(cursor_col, y, glyph, Style::default().fg(fg).reversed());
     }
 }
 
@@ -1227,5 +1302,94 @@ mod tests {
         let inner = block_inner(Rect::new(0.0, 0.0, 1.0, 1.0));
         assert_eq!(inner.width, 0.0);
         assert_eq!(inner.height, 0.0);
+    }
+
+    // ---- SecretInput -------------------------------------------------------
+
+    fn typed_secret(s: &str) -> SecretInput {
+        let mut input = SecretInput::new();
+        for c in s.chars() {
+            input.insert_char(c);
+        }
+        input
+    }
+
+    /// theory/MUKAE.md M5's done-predicate, executable: N typed characters
+    /// render N mask cells, and the rendered buffer carries none of them.
+    #[test]
+    fn eight_typed_characters_render_eight_mask_cells_and_leak_nothing() {
+        let input = typed_secret("grapheme");
+        let mut backend = TestBackend::new(20, 1);
+        backend.draw(|buf| {
+            secret_input_with(buf, Rect::new(0.0, 0.0, 20.0, 1.0), &input, false, &Palette::default());
+        });
+
+        let lines = backend.to_lines();
+        let rendered = lines.join("");
+        assert_eq!(rendered.trim_end(), "********", "eight graphemes, eight mask cells");
+        for c in "grapheme".chars() {
+            assert!(
+                !rendered.contains(c),
+                "the rendered buffer leaked {c:?}: {rendered:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_combining_sequence_is_one_mask_cell() {
+        // e + combining acute: 3 bytes, 2 chars, ONE thing the user saw.
+        let mut input = SecretInput::new();
+        input.insert_char('e');
+        input.insert_char('\u{0301}');
+        let mut backend = TestBackend::new(10, 1);
+        backend.draw(|buf| {
+            secret_input_with(buf, Rect::new(0.0, 0.0, 10.0, 1.0), &input, false, &Palette::default());
+        });
+        assert_eq!(backend.to_lines().join("").trim_end(), "*");
+    }
+
+    #[test]
+    fn an_empty_secret_renders_nothing() {
+        let input = SecretInput::new();
+        let mut backend = TestBackend::new(10, 1);
+        backend.draw(|buf| {
+            secret_input_with(buf, Rect::new(0.0, 0.0, 10.0, 1.0), &input, false, &Palette::default());
+        });
+        assert_eq!(backend.to_lines().join("").trim_end(), "");
+    }
+
+    #[test]
+    fn the_mask_is_clipped_to_the_rect_not_the_secret_length() {
+        // A long secret in a narrow field must not write past the rect — and
+        // must not reveal its length by how far it overflows.
+        let input = typed_secret("abcdefghijklmnop");
+        let mut backend = TestBackend::new(20, 1);
+        backend.draw(|buf| {
+            secret_input_with(buf, Rect::new(0.0, 0.0, 5.0, 1.0), &input, false, &Palette::default());
+        });
+        assert_eq!(backend.to_lines().join("").trim_end(), "*****");
+    }
+
+    #[test]
+    fn a_zero_width_rect_draws_nothing_and_does_not_panic() {
+        let input = typed_secret("grapheme");
+        let mut backend = TestBackend::new(10, 1);
+        backend.draw(|buf| {
+            secret_input_with(buf, Rect::new(0.0, 0.0, 0.0, 1.0), &input, false, &Palette::default());
+        });
+        assert_eq!(backend.to_lines().join("").trim_end(), "");
+    }
+
+    #[test]
+    fn the_draw_trait_routes_secret_input_to_the_masked_drawer() {
+        let mut input = typed_secret("grapheme");
+        input.set_focused(true);
+        let mut backend = TestBackend::new(20, 1);
+        backend.draw(|buf| {
+            input.draw(buf, Rect::new(0.0, 0.0, 20.0, 1.0), &Palette::default());
+        });
+        let rendered = backend.to_lines().join("");
+        assert!(rendered.contains('*'));
+        assert!(!rendered.contains('g'), "Draw must not fall through to a plaintext path");
     }
 }
