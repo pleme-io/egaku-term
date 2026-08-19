@@ -53,16 +53,18 @@ dependencies = [
 
 [[package]]
 name = "egaku"
-version = "0.1.12"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e63eab84c59ae1118c0e091cd0e11a3bf6d5ab5affa78c4f0ce3a9e0a2d5e418"
+checksum = "6efa20abf65a4a9718395dea86dee86391d6ba477a520da45d9534933f5e2c5e"
 dependencies = [
  "awase",
  "serde",
+ "shibori",
  "thiserror",
  "tracing",
  "unicode-segmentation",
  "unicode-width",
+ "zeroize",
 ]
 
 [[package]]
@@ -288,6 +290,12 @@ dependencies = [
  "serde_core",
  "zmij",
 ]
+
+[[package]]
+name = "shibori"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5fb3ed7c462ed1f055d1db17434f2ceaffdd4a7dd6d633328cc1493e9423f40"
 
 [[package]]
 name = "signal-hook"
@@ -559,6 +567,12 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
+
+[[package]]
+name = "zeroize"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
 
 [[package]]
 name = "zmij"
