@@ -15,21 +15,38 @@
 //! 3. Composes via `tokio::select!` so events and external futures share
 //!    the same loop.
 //!
-//! `run_async` does (1)+(2). For (3) — apps that need to multiplex events
-//! with their own streams. **`AsyncApp::tick` DOES NOT EXIST** — this line
-//! promised it, and a `tick_interval`, from at least 0.3.1 onward. The trait
-//! below has four methods and none of them is a tick; `run_async`'s loop is a
-//! single `events.next().await` with no `tokio::select!`, so **a consumer
-//! cannot be woken by anything except input**. Corrected 2026-08-03 after the
-//! promise cost a downstream diagnosis: banken wrote `refresh()` against this
-//! contract and it has had zero callers ever since.
+//! `run_async` does all three. (3) arrives as [`AsyncApp::wake`] +
+//! [`AsyncApp::on_wake`], and the loop really is a two-arm `tokio::select!`
+//! over `events.next()` and `app.wake()` — read it below rather than taking
+//! this paragraph's word for it.
 //!
-//! Until a tick lands, the shipped way to get a periodic wakeup is to skip
-//! `run_async` and hand-roll the loop — `hibiki/src/main.rs:209` does exactly
-//! that with an `EventStream` arm plus a `tokio::time::interval` arm, using
-//! only public API from this crate. Or skip the runtime and
-//! drive [`Terminal`] + drawers directly from your own `select!` loop —
-//! both are first-class.
+//! There is still **no `tick` and no `tick_interval`**, and that is a design
+//! choice rather than a gap: a periodic wakeup is one thing a consumer might
+//! want among many (a `watch` channel, a queue, a file-watch event), so the
+//! runtime takes an arbitrary future and lets the consumer decide what it
+//! resolves on. `tokio::time::interval` in your `wake()` is the tick.
+//!
+//! ── ★ WHAT THIS PARAGRAPH USED TO SAY, AND WHY THE NOTE STAYS ─────────────
+//!
+//! Until 2026-08-28 this header stated the opposite of the code: that no
+//! `select!` existed and "a consumer cannot be woken by anything except
+//! input". That was true when written, and `wake`/`on_wake` landed after it
+//! without the header being updated.
+//!
+//! It is recorded because a doc that contradicts its own module is worse than
+//! an undocumented one, and this one proved it TWICE. Its own text notes the
+//! first cost — a downstream diagnosis, when banken wrote `refresh()` against
+//! a promised tick that did not exist. The second: an agent read this header
+//! while assessing whether banken could switch clusters at runtime, believed
+//! it over the code twenty lines below, and reported to an operator that the
+//! feature needed a new upstream library primitive. It needed nothing; the
+//! primitive was already there and banken already overrides both halves of it
+//! (`app.rs`, `antessala.rs`).
+//!
+//! The lesson is placement, not diligence: a claim about a loop belongs AT
+//! the loop, where changing the code puts the sentence in the diff. A module
+//! header is the one place a stale claim can survive every edit to the thing
+//! it describes.
 
 use crossterm::event::{Event, EventStream};
 use egaku::KeyMap;
