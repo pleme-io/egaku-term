@@ -393,6 +393,37 @@ fn draw_table_cells(
     }
 }
 
+// ---------- the field bed ----------------------------------------------------
+
+/// Paint the bed of a one-row input field and return the style text sits on.
+///
+/// ── ★ A FIELD MUST BE VISIBLE WHEN IT IS EMPTY ───────────────────────────
+/// Measured on plo 2026-08-28, on the fleet's own login screen. Both input
+/// drawers below wrote the text (or the mask) and a cursor cell, and nothing
+/// else. On a 240x67 console that made the login exactly ONE styled cell: the
+/// block cursor. The username field was invisible because it was empty, and
+/// the password field was invisible because it was empty AND unfocused, so it
+/// drew literally nothing -- there was no way to know a second field existed.
+/// The operator's report was "an underscore cursor", and they were describing
+/// the whole rendered UI.
+///
+/// A drawn-nothing field is not a cosmetic problem. A person cannot tab to a
+/// field they cannot see, and on a login screen the second field is the one
+/// that matters.
+///
+/// The bed goes down FIRST so the text and the cursor overwrite it, and the
+/// returned style carries the bed's background so glyphs sit ON the field
+/// rather than punching a hole in it.
+fn field_bed(buf: &mut Buffer, x: u16, y: u16, w: u16, palette: &Palette) -> Style {
+    let bed = Style::default()
+        .fg(palette.foreground)
+        .bg(palette.selection);
+    for col in x..x.saturating_add(w) {
+        buf.set_char(col, y, ' ', bed);
+    }
+    bed
+}
+
 // ---------- TextInput --------------------------------------------------------
 
 /// Render a [`TextInput`] on a single row of `rect`. When `focused`, a
@@ -421,7 +452,7 @@ pub fn text_input_with(
     } else {
         palette.muted
     };
-    let style = Style::default().fg(fg);
+    let style = field_bed(buf, x, y, w, palette).fg(fg);
     buf.set_stringn(x, y, text, w, style);
 
     if focused {
@@ -430,7 +461,7 @@ pub fn text_input_with(
         let prefix_width = u16::try_from(text[..cursor_byte.min(text.len())].width()).unwrap_or(0);
         let cursor_col = x + prefix_width.min(w.saturating_sub(1));
         let cursor_glyph = text[cursor_byte..].chars().next().unwrap_or(' ');
-        let cursor_style = Style::default().fg(fg).reversed();
+        let cursor_style = style.reversed();
         buf.set_char(cursor_col, y, cursor_glyph, cursor_style);
     }
 }
@@ -476,7 +507,7 @@ pub fn secret_input_with(
     } else {
         palette.muted
     };
-    let style = Style::default().fg(fg);
+    let style = field_bed(buf, x, y, w, palette).fg(fg);
 
     // One mask cell per grapheme, clipped to the rect. `mask_len` is already
     // grapheme-counted, so a combining sequence or an emoji is one cell here
@@ -497,7 +528,7 @@ pub fn secret_input_with(
         } else {
             ' '
         };
-        buf.set_char(cursor_col, y, glyph, Style::default().fg(fg).reversed());
+        buf.set_char(cursor_col, y, glyph, style.reversed());
     }
 }
 
@@ -1349,7 +1380,12 @@ mod tests {
     }
 
     #[test]
-    fn an_empty_secret_renders_nothing() {
+    // Renamed 2026-08-28: this checked "renders nothing" and now the field
+    // paints a bed, so the old name would have read as a promise the code no
+    // longer makes. What it actually guards -- and always guarded -- is that
+    // an empty secret writes no MASK GLYPHS, i.e. leaks no length. Still true,
+    // still worth pinning; the bed is spaces, which `to_lines` trims.
+    fn an_empty_secret_writes_no_mask_glyphs() {
         let input = SecretInput::new();
         let mut backend = TestBackend::new(10, 1);
         backend.draw(|buf| {
@@ -1391,5 +1427,54 @@ mod tests {
         let rendered = backend.to_lines().join("");
         assert!(rendered.contains('*'));
         assert!(!rendered.contains('g'), "Draw must not fall through to a plaintext path");
+    }
+
+    // ── ★ THE FIELD-VISIBILITY GUARD ────────────────────────────────────
+    // These two pin the defect measured on plo's login screen: an EMPTY
+    // field drew zero cells, so the whole rendered UI was one block cursor.
+    // The empty-and-unfocused case is the one that actually bit -- that was
+    // the password field, and nothing on screen said it existed.
+    #[test]
+    fn an_empty_unfocused_text_field_is_still_visible() {
+        let palette = Palette::default();
+        let mut backend = TestBackend::new(20, 3);
+        let input = TextInput::default();
+        backend.draw(|buf| {
+            text_input_with(buf, Rect::new(2.0, 1.0, 10.0, 1.0), &input, false, &palette);
+        });
+        let bed: Vec<_> = (2..12)
+            .map(|x| backend.cell(x, 1).expect("field cell").bg)
+            .collect();
+        assert!(
+            bed.iter().all(|bg| *bg == palette.selection),
+            "every cell of an empty unfocused text field must carry the bed \
+             background -- an invisible field cannot be found or tabbed to"
+        );
+        assert_ne!(
+            backend.cell(0, 1).expect("outside cell").bg,
+            palette.selection,
+            "the bed must stop at the rect: this is what makes the field's \
+             extent readable rather than merging into the page"
+        );
+    }
+
+    #[test]
+    fn an_empty_unfocused_secret_field_is_still_visible() {
+        // The password field on plo drew NOTHING: empty, so no mask cells, and
+        // unfocused, so no cursor. This is that exact case.
+        let palette = Palette::default();
+        let mut backend = TestBackend::new(20, 3);
+        let input = SecretInput::default();
+        backend.draw(|buf| {
+            secret_input_with(buf, Rect::new(2.0, 1.0, 10.0, 1.0), &input, false, &palette);
+        });
+        let drawn = (2..12).all(|x| {
+            backend.cell(x, 1).expect("field cell").bg == palette.selection
+        });
+        assert!(
+            drawn,
+            "an empty unfocused SECRET field must still show where it is; \
+             drawing nothing is how a login screen loses its password field"
+        );
     }
 }
