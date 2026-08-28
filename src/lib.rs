@@ -86,7 +86,7 @@ pub mod theme;
 #[cfg(feature = "tokio")]
 pub mod app_async;
 
-pub use app::{App, run};
+pub use app::{App, EventPump, run};
 pub use backend::TestBackend;
 pub use buffer::Buffer;
 pub use cell::{Cell, Modifiers, Style};
