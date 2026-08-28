@@ -3,7 +3,7 @@
 //! The runtime owns the terminal lifecycle and event loop so apps don't
 //! have to. Implement [`App`] on a state struct, then call [`run`].
 
-use crossterm::event::{self, Event};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
 use egaku::KeyMap;
 
 use crate::buffer::Buffer;
@@ -11,6 +11,151 @@ use crate::error::Result;
 use crate::event::from_crossterm;
 use crate::render::render_diff;
 use crate::terminal::Terminal;
+
+/// How long the loop waits for a terminal event when an [`EventPump`] is
+/// attached but the app declared no `tick_interval`.
+///
+/// ~60 Hz. A driven app wants an injected keystroke acted on promptly, and a
+/// poll this cheap is invisible next to the redraw it precedes. An app that
+/// wants a different tradeoff says so with `tick_interval`, which wins.
+const PUMP_POLL: std::time::Duration = std::time::Duration::from_millis(16);
+
+/// A handle another thread can use to feed events into a running [`App`].
+///
+/// ── ★ WHAT THIS IS FOR ───────────────────────────────────────────────────
+/// A TUI's input comes from a terminal, and a terminal is the one thing an
+/// agent, a test harness, or a replay tool does not have. Every such consumer
+/// otherwise grows its own side channel into the app's state — and then the
+/// driven path and the human path are two different programs that happen to
+/// share a name. Bugs live in the gap, and they are invisible exactly when
+/// you are driving the thing to look for them.
+///
+/// So a pump does not reach into app state at all. It queues real [`Event`]s,
+/// and the run loop takes them **before** it polls the terminal and hands
+/// them to the same dispatch chain a keypress goes through — the typed
+/// hotkey map, then the string keymap, then `on_text`, then `on_unhandled`.
+/// There is one copy of that chain and injected events cannot miss it.
+///
+/// ── ★ BOUNDED, AND IT SAYS SO ────────────────────────────────────────────
+/// The queue has a cap and `inject` returns whether the event was taken. A
+/// silently-dropped keystroke is the worst failure a driven TUI can have: the
+/// producer believes it typed a password and the app received half of one,
+/// and nothing anywhere says so. `dropped()` counts refusals so a consumer
+/// can assert on it rather than hope.
+#[derive(Clone, Debug)]
+pub struct EventPump {
+    inner: std::sync::Arc<PumpInner>,
+}
+
+#[derive(Debug)]
+struct PumpInner {
+    queue: std::sync::Mutex<std::collections::VecDeque<Event>>,
+    dropped: std::sync::atomic::AtomicU64,
+    cap: usize,
+}
+
+impl Default for EventPump {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EventPump {
+    /// A pump holding at most 1024 pending events.
+    ///
+    /// Generous for typing — a password is tens of events — and small enough
+    /// that a runaway producer is refused rather than growing until the
+    /// machine notices.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::with_capacity(1024)
+    }
+
+    #[must_use]
+    pub fn with_capacity(cap: usize) -> Self {
+        Self {
+            inner: std::sync::Arc::new(PumpInner {
+                queue: std::sync::Mutex::new(std::collections::VecDeque::new()),
+                dropped: std::sync::atomic::AtomicU64::new(0),
+                cap: cap.max(1),
+            }),
+        }
+    }
+
+    /// Queue one event. Returns `false` when the queue is full and the event
+    /// was NOT taken — never silently.
+    ///
+    /// ★ Refuses the NEWEST rather than evicting the oldest. A half-delivered
+    /// sequence that is missing its tail can be retried; one missing an event
+    /// from its middle has been reordered, and for input that is a different
+    /// and worse failure.
+    pub fn inject(&self, event: Event) -> bool {
+        let mut q = self
+            .inner
+            .queue
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if q.len() >= self.inner.cap {
+            self.inner
+                .dropped
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            return false;
+        }
+        q.push_back(event);
+        true
+    }
+
+    /// Queue a key press. The ergonomic form of [`EventPump::inject`].
+    pub fn inject_key(&self, code: KeyCode, modifiers: KeyModifiers) -> bool {
+        self.inject(Event::Key(KeyEvent {
+            code,
+            modifiers,
+            // ★ `Press`, explicitly. `egaku_term`'s own key routing drops
+            // anything that is not a press, so a synthetic event built with
+            // the default kind would be accepted here and discarded three
+            // frames later with nothing logged.
+            kind: KeyEventKind::Press,
+            state: KeyEventState::NONE,
+        }))
+    }
+
+    /// Queue each character of `text` as a key press.
+    ///
+    /// Returns the number of characters actually queued, which is `text.chars().count()`
+    /// unless the queue filled — so a caller can compare and notice.
+    pub fn inject_text(&self, text: &str) -> usize {
+        text.chars()
+            .take_while(|c| self.inject_key(KeyCode::Char(*c), KeyModifiers::NONE))
+            .count()
+    }
+
+    /// Events waiting to be dispatched.
+    #[must_use]
+    pub fn pending(&self) -> usize {
+        self.inner
+            .queue
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
+    }
+
+    /// Events refused because the queue was full, since construction.
+    #[must_use]
+    pub fn dropped(&self) -> u64 {
+        self.inner
+            .dropped
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    fn take(&self) -> Option<Event> {
+        self.inner
+            .queue
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .pop_front()
+    }
+}
+
 
 /// Drives a terminal application via egaku state machines.
 ///
@@ -42,6 +187,50 @@ pub trait App {
     /// (text input characters, mouse events, resize, etc.). The default
     /// is a no-op.
     fn on_unhandled(&mut self, _event: &Event) {}
+
+    /// Optional: how long to wait for an event before calling [`App::tick`].
+    ///
+    /// ── ★ WHY THIS EXISTS ────────────────────────────────────────────────
+    /// The loop below reads events with `event::read()`, which BLOCKS. That
+    /// makes an egaku-term app unable to react to anything except a
+    /// keypress: not a clock, not a file change, not a message from another
+    /// thread. Any app that needs one has had to grow a second thread and a
+    /// way to fake a keystroke, which is how a TUI ends up with two input
+    /// paths that disagree.
+    ///
+    /// Returning `None` — the default — keeps `event::read()` exactly as it
+    /// was, so every existing app is unchanged byte for byte and nothing
+    /// opts in by accident.
+    ///
+    /// The concrete case that forced it: mukae's greeter publishes its login
+    /// flow over kanshou so an agent can OBSERVE it, and could never be
+    /// answered, because a queued synthetic keystroke had no moment to be
+    /// drained in. The observation surface existed and the loop had no way
+    /// to reach it.
+    fn tick_interval(&self) -> Option<std::time::Duration> {
+        None
+    }
+
+    /// Optional: called when [`App::tick_interval`] elapsed with no event.
+    ///
+    /// Runs on the SAME thread as `handle` and `draw`, so an implementation
+    /// may touch app state directly and needs no lock of its own beyond
+    /// whatever it shares with other threads. A tick that changes state is
+    /// followed by a redraw on the next pass, exactly as an event is.
+    fn tick(&mut self) {}
+
+    /// Optional: a queue this app accepts injected events from.
+    ///
+    /// Returning `Some` opts the loop into polling (see [`PUMP_POLL`]) so
+    /// queued events are acted on promptly. The default is `None`, which
+    /// leaves `event::read()` blocking exactly as before.
+    ///
+    /// The app owns the pump and hands clones to whatever drives it — an MCP
+    /// sidecar, a test, a replay. See [`EventPump`] for why injection goes
+    /// through the queue rather than through app state.
+    fn event_pump(&self) -> Option<&EventPump> {
+        None
+    }
 
     /// Optional: dispatch through **typed** [`awase::Hotkey`] chords instead
     /// of the string [`KeyCombo`] path.
@@ -226,7 +415,45 @@ where
         render_diff(term.out(), &prev, &back, sync)?;
         std::mem::swap(&mut prev, &mut back);
 
-        let evt = event::read()?;
+        // ★ POLL-THEN-READ, ONLY WHEN THE APP ASKED FOR IT. With no
+        // `tick_interval` this is `event::read()` and nothing else — the
+        // original blocking call, so an app that never opts in cannot pay a
+        // wakeup it did not request. `continue` rather than falling through:
+        // a tick is not an event, and handing one to the keymap would make
+        // every app's `on_unhandled` fire on a timer.
+        // ★ ONLY THE *SOURCE* OF THE EVENT CHANGES HERE — never its routing.
+        // The dispatch chain below is left exactly as it was, so an injected
+        // event provably takes the same path as a keystroke: there is one
+        // copy of that chain and nothing can route around it. Factoring the
+        // chain instead would have created the very divergence an injection
+        // API exists to avoid.
+        //
+        // Injected events are drained BEFORE the terminal is polled. They
+        // have already arrived; making them wait behind a poll would add a
+        // frame of latency to every driven keystroke for no reason.
+        let injected = app.event_pump().and_then(EventPump::take);
+        let evt = if let Some(e) = injected {
+            e
+        } else {
+            // An attached pump implies polling even with no `tick_interval`,
+            // or an injected event would sit unseen behind a blocking read
+            // until the operator happened to touch a key — which is the
+            // failure this whole mechanism exists to remove.
+            let wait = app
+                .tick_interval()
+                .or_else(|| app.event_pump().map(|_| PUMP_POLL));
+            match wait {
+                None => event::read()?,
+                Some(interval) => {
+                    if event::poll(interval)? {
+                        event::read()?
+                    } else {
+                        app.tick();
+                        continue;
+                    }
+                }
+            }
+        };
         if let Event::Resize(w, h) = evt {
             cols = w;
             rows = h;
@@ -579,5 +806,175 @@ mod unclaimed_tests {
                 "{axis:?}",
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tick_tests {
+    use super::*;
+
+    struct Bare;
+    impl App for Bare {
+        type Action = ();
+        fn keymap(&self) -> &KeyMap<()> {
+            unreachable!("not driven in this test")
+        }
+        fn handle(&mut self, _: &()) {}
+        fn draw(&self, _: &mut Buffer) -> Result<()> {
+            Ok(())
+        }
+        fn should_quit(&self) -> bool {
+            true
+        }
+    }
+
+    /// ★ THE LOAD-BEARING PROPERTY. `run` calls `event::read()` — a blocking
+    /// read — unless the app asks otherwise, so an app that has not opted in
+    /// must report `None` and keep exactly its old behaviour. A default of
+    /// `Some(..)` would put a wakeup on every TUI in the fleet, and the cost
+    /// would show up as battery drain nobody could attribute.
+    #[test]
+    fn an_app_that_did_not_opt_in_still_blocks() {
+        assert_eq!(
+            Bare.tick_interval(),
+            None,
+            "the default must leave event::read() untouched"
+        );
+    }
+
+    /// `tick` must be safe to call on an app that never implements it —
+    /// otherwise the default would be a trap rather than a no-op.
+    #[test]
+    fn the_default_tick_is_a_no_op() {
+        let mut a = Bare;
+        a.tick();
+        a.tick();
+    }
+
+    struct Ticker(u32);
+    impl App for Ticker {
+        type Action = ();
+        fn keymap(&self) -> &KeyMap<()> {
+            unreachable!()
+        }
+        fn handle(&mut self, _: &()) {}
+        fn draw(&self, _: &mut Buffer) -> Result<()> {
+            Ok(())
+        }
+        fn should_quit(&self) -> bool {
+            self.0 >= 3
+        }
+        fn tick_interval(&self) -> Option<std::time::Duration> {
+            Some(std::time::Duration::from_millis(5))
+        }
+        fn tick(&mut self) {
+            self.0 += 1;
+        }
+    }
+
+    #[test]
+    fn an_opted_in_app_reports_its_interval_and_ticks_its_own_state() {
+        let mut t = Ticker(0);
+        assert_eq!(t.tick_interval(), Some(std::time::Duration::from_millis(5)));
+        assert!(!t.should_quit());
+        t.tick();
+        t.tick();
+        t.tick();
+        assert!(t.should_quit(), "tick must be able to end the loop");
+    }
+}
+
+#[cfg(test)]
+mod pump_tests {
+    use super::*;
+
+    #[test]
+    fn an_injected_key_is_a_press_because_the_router_drops_anything_else() {
+        let p = EventPump::new();
+        assert!(p.inject_key(KeyCode::Char('x'), KeyModifiers::NONE));
+        match p.take() {
+            Some(Event::Key(k)) => assert_eq!(
+                k.kind,
+                KeyEventKind::Press,
+                "a non-Press synthetic key is accepted here and silently \
+                 discarded by the router later — the worst kind of bug"
+            ),
+            other => panic!("expected a key event, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn text_is_queued_in_order() {
+        let p = EventPump::new();
+        assert_eq!(p.inject_text("abc"), 3);
+        let mut got = String::new();
+        while let Some(Event::Key(k)) = p.take() {
+            if let KeyCode::Char(c) = k.code {
+                got.push(c);
+            }
+        }
+        assert_eq!(got, "abc", "order is the whole contract for typed input");
+    }
+
+    /// ★ THE PROPERTY THAT MATTERS MOST. A dropped keystroke must be
+    /// REPORTED, never silent: the producer believing it typed a password
+    /// while the app received half of one is unrecoverable and undiagnosable.
+    #[test]
+    fn a_full_queue_refuses_and_counts_rather_than_dropping_quietly() {
+        let p = EventPump::with_capacity(2);
+        assert!(p.inject_key(KeyCode::Char('a'), KeyModifiers::NONE));
+        assert!(p.inject_key(KeyCode::Char('b'), KeyModifiers::NONE));
+        assert!(
+            !p.inject_key(KeyCode::Char('c'), KeyModifiers::NONE),
+            "the third must be refused, not silently dropped"
+        );
+        assert_eq!(p.dropped(), 1, "refusals are counted so a caller can assert");
+        assert_eq!(p.pending(), 2);
+    }
+
+    #[test]
+    fn inject_text_reports_the_short_count_when_the_queue_fills() {
+        let p = EventPump::with_capacity(3);
+        assert_eq!(
+            p.inject_text("hello"),
+            3,
+            "the caller must be able to see that only part of the text landed"
+        );
+    }
+
+    #[test]
+    fn a_clone_shares_the_queue_so_another_thread_can_drive() {
+        let p = EventPump::new();
+        let q = p.clone();
+        std::thread::spawn(move || {
+            q.inject_text("hi");
+        })
+        .join()
+        .unwrap();
+        assert_eq!(p.pending(), 2, "a pump must be usable from the thread that drives it");
+    }
+
+    struct Bare2;
+    impl App for Bare2 {
+        type Action = ();
+        fn keymap(&self) -> &KeyMap<()> {
+            unreachable!()
+        }
+        fn handle(&mut self, _: &()) {}
+        fn draw(&self, _: &mut Buffer) -> Result<()> {
+            Ok(())
+        }
+        fn should_quit(&self) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn an_app_without_a_pump_keeps_the_blocking_read() {
+        assert!(
+            Bare2.event_pump().is_none(),
+            "no pump and no tick_interval must leave event::read() untouched"
+        );
+        assert_eq!(Bare2.tick_interval(), None);
     }
 }
