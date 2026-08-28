@@ -69,7 +69,7 @@ dependencies = [
 
 [[package]]
 name = "egaku-term"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "awase",
  "crossterm",
