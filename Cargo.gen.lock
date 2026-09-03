@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "f397ca7e0d845f2089d0b1a43a8cde3de2ba1910bf3f3abc8f703638e5441218",
+  "cargo_lock_sha256": "fda9db3db857a43b22ec4fb399ca7d31c5e281eb050efcf69427f09e2585d8f0",
   "manifest_sha256": {
-    "Cargo.toml": "bc562887112d1ebaadf58a8a693aaa42b58f8d4113d50329962f941488f1053a"
+    "Cargo.toml": "a0dbbcaed43eb89f777ee910fc5d0105097bf351780f620ea297de3fd90af2d2"
   },
   "target_resolves": {
     "base": {
@@ -70,7 +70,7 @@
           },
           {
             "name": "mio",
-            "package_key": "mio-1.2.2",
+            "package_key": "mio-1.2.3",
             "kind": "normal",
             "features": [
               "os-poll"
@@ -135,11 +135,21 @@
           "windows"
         ]
       },
-      "egaku-0.1.14": {
+      "egaku-0.1.15": {
         "runtime_dependencies": [
           {
             "name": "awase",
             "package_key": "awase-0.1.10",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "ishou_tokens",
+            "package_key": "ishou-tokens-0.1.15",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -223,7 +233,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.16": {
+      "egaku-term-0.3.17": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -247,7 +257,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.14",
+            "package_key": "egaku-0.1.15",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -330,6 +340,74 @@
           "std"
         ]
       },
+      "irodori-0.1.1": {
+        "runtime_dependencies": [
+          {
+            "name": "serde",
+            "package_key": "serde-1.0.229",
+            "kind": "normal",
+            "features": [
+              "derive"
+            ],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "thiserror",
+            "package_key": "thiserror-2.0.20",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          }
+        ],
+        "build_dependencies": [],
+        "features": []
+      },
+      "ishou-tokens-0.1.15": {
+        "runtime_dependencies": [
+          {
+            "name": "irodori",
+            "package_key": "irodori-0.1.1",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "serde",
+            "package_key": "serde-1.0.229",
+            "kind": "normal",
+            "features": [
+              "derive"
+            ],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "serde_json",
+            "package_key": "serde_json-1.0.151",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          }
+        ],
+        "build_dependencies": [],
+        "features": [
+          "default"
+        ]
+      },
       "itoa-1.0.18": {
         "runtime_dependencies": [],
         "build_dependencies": [],
@@ -376,7 +454,7 @@
           "std"
         ]
       },
-      "mio-1.2.2": {
+      "mio-1.2.3": {
         "runtime_dependencies": [
           {
             "name": "libc",
@@ -470,7 +548,7 @@
           },
           {
             "name": "smallvec",
-            "package_key": "smallvec-1.15.2",
+            "package_key": "smallvec-1.16.0",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -717,7 +795,7 @@
           },
           {
             "name": "mio_1_0",
-            "package_key": "mio-1.2.2",
+            "package_key": "mio-1.2.3",
             "kind": "normal",
             "features": [
               "net",
@@ -771,7 +849,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "smallvec-1.15.2": {
+      "smallvec-1.16.0": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -1763,10 +1841,10 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.14": {
+    "egaku-0.1.15": {
       "edition": "2024"
     },
-    "egaku-term-0.3.16": {
+    "egaku-term-0.3.17": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
@@ -1775,6 +1853,12 @@
     },
     "errno-0.3.14": {
       "edition": "2018"
+    },
+    "irodori-0.1.1": {
+      "edition": "2024"
+    },
+    "ishou-tokens-0.1.15": {
+      "edition": "2024"
     },
     "itoa-1.0.18": {
       "edition": "2021"
@@ -1795,7 +1879,7 @@
     "memchr-2.8.3": {
       "edition": "2021"
     },
-    "mio-1.2.2": {
+    "mio-1.2.3": {
       "edition": "2021"
     },
     "once_cell-1.21.4": {
@@ -1855,7 +1939,7 @@
     "signal-hook-registry-1.4.8": {
       "edition": "2015"
     },
-    "smallvec-1.15.2": {
+    "smallvec-1.16.0": {
       "edition": "2018"
     },
     "syn-2.0.119": {
