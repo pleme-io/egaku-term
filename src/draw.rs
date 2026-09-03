@@ -1352,12 +1352,22 @@ mod tests {
         let input = typed_secret("grapheme");
         let mut backend = TestBackend::new(20, 1);
         backend.draw(|buf| {
-            secret_input_with(buf, Rect::new(0.0, 0.0, 20.0, 1.0), &input, false, &Palette::default());
+            secret_input_with(
+                buf,
+                Rect::new(0.0, 0.0, 20.0, 1.0),
+                &input,
+                false,
+                &Palette::default(),
+            );
         });
 
         let lines = backend.to_lines();
         let rendered = lines.join("");
-        assert_eq!(rendered.trim_end(), "********", "eight graphemes, eight mask cells");
+        assert_eq!(
+            rendered.trim_end(),
+            "********",
+            "eight graphemes, eight mask cells"
+        );
         for c in "grapheme".chars() {
             assert!(
                 !rendered.contains(c),
@@ -1374,7 +1384,13 @@ mod tests {
         input.insert_char('\u{0301}');
         let mut backend = TestBackend::new(10, 1);
         backend.draw(|buf| {
-            secret_input_with(buf, Rect::new(0.0, 0.0, 10.0, 1.0), &input, false, &Palette::default());
+            secret_input_with(
+                buf,
+                Rect::new(0.0, 0.0, 10.0, 1.0),
+                &input,
+                false,
+                &Palette::default(),
+            );
         });
         assert_eq!(backend.to_lines().join("").trim_end(), "*");
     }
@@ -1389,7 +1405,13 @@ mod tests {
         let input = SecretInput::new();
         let mut backend = TestBackend::new(10, 1);
         backend.draw(|buf| {
-            secret_input_with(buf, Rect::new(0.0, 0.0, 10.0, 1.0), &input, false, &Palette::default());
+            secret_input_with(
+                buf,
+                Rect::new(0.0, 0.0, 10.0, 1.0),
+                &input,
+                false,
+                &Palette::default(),
+            );
         });
         assert_eq!(backend.to_lines().join("").trim_end(), "");
     }
@@ -1401,7 +1423,13 @@ mod tests {
         let input = typed_secret("abcdefghijklmnop");
         let mut backend = TestBackend::new(20, 1);
         backend.draw(|buf| {
-            secret_input_with(buf, Rect::new(0.0, 0.0, 5.0, 1.0), &input, false, &Palette::default());
+            secret_input_with(
+                buf,
+                Rect::new(0.0, 0.0, 5.0, 1.0),
+                &input,
+                false,
+                &Palette::default(),
+            );
         });
         assert_eq!(backend.to_lines().join("").trim_end(), "*****");
     }
@@ -1411,7 +1439,13 @@ mod tests {
         let input = typed_secret("grapheme");
         let mut backend = TestBackend::new(10, 1);
         backend.draw(|buf| {
-            secret_input_with(buf, Rect::new(0.0, 0.0, 0.0, 1.0), &input, false, &Palette::default());
+            secret_input_with(
+                buf,
+                Rect::new(0.0, 0.0, 0.0, 1.0),
+                &input,
+                false,
+                &Palette::default(),
+            );
         });
         assert_eq!(backend.to_lines().join("").trim_end(), "");
     }
@@ -1426,7 +1460,10 @@ mod tests {
         });
         let rendered = backend.to_lines().join("");
         assert!(rendered.contains('*'));
-        assert!(!rendered.contains('g'), "Draw must not fall through to a plaintext path");
+        assert!(
+            !rendered.contains('g'),
+            "Draw must not fall through to a plaintext path"
+        );
     }
 
     // ── ★ THE FIELD-VISIBILITY GUARD ────────────────────────────────────
