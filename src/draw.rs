@@ -17,8 +17,8 @@
 // `tests/pending_egaku_bump.rs` for why the compiler — not a test — is the gate
 // in this direction. (A signpost, not a check; the hard gate is this import.)
 use egaku::{
-    ListView, Modal, Rect, ScrollView, SecretInput, SplitPane, TabBar, TableRow, TableView,
-    TextInput,
+    ListView, Modal, PickerView, Rect, ScrollView, SecretInput, SplitPane, TabBar, TableRow,
+    TableView, TextInput,
 };
 use unicode_width::UnicodeWidthStr;
 
@@ -243,6 +243,54 @@ pub fn list_with(buf: &mut Buffer, rect: Rect, list: &ListView, focused: bool, p
         let end = buf.set_stringn(x, row, prefix, w, style);
         let remaining = x.saturating_add(w).saturating_sub(end);
         buf.set_stringn(end, row, item, remaining, style);
+    }
+}
+
+// ---------- FuzzyPicker --------------------------------------------------
+
+/// Render a [`egaku::FuzzyPicker`]'s [`PickerView`] inside `rect`: a
+/// bordered box titled `title`, the query on the first row, then the
+/// matches — windowed so the selected row is always visible, highlighted
+/// exactly like [`list_with`]'s selection so every fleet list reads alike.
+///
+/// The picker owns filtering and selection (egaku); this only paints.
+pub fn picker_with<T>(buf: &mut Buffer, rect: Rect, view: &PickerView<'_, T>, title: &str, palette: &Palette) {
+    let (x, y, w, h) = to_cell_rect(rect);
+    if w < 4 || h < 3 {
+        return;
+    }
+    let bg = Style::default().bg(palette.background);
+    for r in 0..h {
+        buf.blank(x, y + r, w, bg);
+    }
+    bordered_block_with(buf, rect, title, true, palette);
+    let (ix, iy, iw, ih) = to_cell_rect(block_inner(rect));
+    if iw == 0 || ih == 0 {
+        return;
+    }
+    let end = buf.set_stringn(ix, iy, "› ", iw, Style::default().fg(palette.accent));
+    buf.set_stringn(end, iy, view.query, (ix + iw).saturating_sub(end), Style::default().fg(palette.foreground));
+    let rows = usize::from(ih.saturating_sub(1));
+    if rows == 0 {
+        return;
+    }
+    // Window the matches around the selection.
+    let first = view.selected.saturating_sub(rows.saturating_sub(1));
+    for (i, item) in view.rows.iter().enumerate().skip(first).take(rows) {
+        let row = iy + 1 + u16::try_from(i - first).unwrap_or(u16::MAX);
+        let (style, prefix) = if i == view.selected {
+            (Style::default().fg(palette.foreground).bg(palette.selection).bold(), "▶ ")
+        } else {
+            (Style::default(), "  ")
+        };
+        if i == view.selected {
+            buf.blank(ix, row, iw, style);
+        }
+        let end = buf.set_stringn(ix, row, prefix, iw, style);
+        buf.set_stringn(end, row, &item.label, (ix + iw).saturating_sub(end), style);
+    }
+    if view.rows.is_empty() {
+        buf.set_stringn(ix, iy + 1, "  (no matches)", iw, Style::default().fg(palette.muted));
     }
 }
 
@@ -1513,5 +1561,36 @@ mod tests {
             "an empty unfocused SECRET field must still show where it is; \
              drawing nothing is how a login screen loses its password field"
         );
+    }
+
+    #[test]
+    fn picker_with_shows_query_matches_and_keeps_the_selection_visible() {
+        use egaku::{FuzzyPicker, PickerEvent, PickerItem};
+        let items: Vec<_> = (0..30).map(|i| PickerItem::new(i, format!("src/file{i:02}.rs"))).collect();
+        let mut p = FuzzyPicker::new(items);
+        p.on_event(PickerEvent::Open);
+        for _ in 0..20 {
+            p.on_event(PickerEvent::NavDown);
+        }
+        let mut buf = Buffer::empty(40, 8);
+        picker_with(&mut buf, Rect::new(0.0, 0.0, 40.0, 8.0), &p.view(), " files ", &Palette::default());
+        let screen: String = (0..8)
+            .map(|y| (0..40).map(|x| buf.get(x, y).map_or(" ", |c| c.symbol())).collect::<String>() + "\n")
+            .collect();
+        assert!(screen.contains("files"), "{screen}");
+        assert!(screen.contains("▶ src/file20.rs"), "selection windowed into view:\n{screen}");
+        assert!(!screen.contains("src/file00.rs"), "rows scrolled past are not drawn");
+    }
+
+    #[test]
+    fn picker_with_says_when_nothing_matches() {
+        use egaku::{FuzzyPicker, PickerEvent, PickerItem};
+        let mut p = FuzzyPicker::new(vec![PickerItem::new(1, "alpha")]);
+        p.on_event(PickerEvent::Open);
+        p.on_event(PickerEvent::Type('z'));
+        let mut buf = Buffer::empty(30, 5);
+        picker_with(&mut buf, Rect::new(0.0, 0.0, 30.0, 5.0), &p.view(), " x ", &Palette::default());
+        let row: String = (0..30).map(|x| buf.get(x, 2).map_or(" ", |c| c.symbol())).collect();
+        assert!(row.contains("no matches"), "{row}");
     }
 }
