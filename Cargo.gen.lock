@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "fda9db3db857a43b22ec4fb399ca7d31c5e281eb050efcf69427f09e2585d8f0",
+  "cargo_lock_sha256": "63678e23fe101e01951e68ee6ac7ba71344be40bf5119405f1785097c68ad321",
   "manifest_sha256": {
-    "Cargo.toml": "a0dbbcaed43eb89f777ee910fc5d0105097bf351780f620ea297de3fd90af2d2"
+    "Cargo.toml": "1c91d40c140d298bdac7e15983fa4c2af51e24377c39c46d8ad2201746afe0e7"
   },
   "target_resolves": {
     "base": {
@@ -22,7 +22,7 @@
           },
           {
             "name": "thiserror",
-            "package_key": "thiserror-2.0.20",
+            "package_key": "thiserror-2.0.21",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -44,14 +44,14 @@
         "build_dependencies": [],
         "features": []
       },
-      "bitflags-2.13.1": {
+      "bitflags-2.13.2": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": [
           "std"
         ]
       },
-      "cfg-if-1.0.4": {
+      "cfg-if-1.0.5": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -60,7 +60,7 @@
         "runtime_dependencies": [
           {
             "name": "bitflags",
-            "package_key": "bitflags-2.13.1",
+            "package_key": "bitflags-2.13.2",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -135,7 +135,7 @@
           "windows"
         ]
       },
-      "egaku-0.1.15": {
+      "egaku-0.1.18": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -149,7 +149,7 @@
           },
           {
             "name": "ishou_tokens",
-            "package_key": "ishou-tokens-0.1.15",
+            "package_key": "ishou-tokens-0.1.18",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -181,7 +181,7 @@
           },
           {
             "name": "thiserror",
-            "package_key": "thiserror-2.0.20",
+            "package_key": "thiserror-2.0.21",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -233,7 +233,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.17": {
+      "egaku-term-0.3.18": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -257,7 +257,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.15",
+            "package_key": "egaku-0.1.18",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -267,7 +267,7 @@
           },
           {
             "name": "thiserror",
-            "package_key": "thiserror-2.0.20",
+            "package_key": "thiserror-2.0.21",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -356,7 +356,7 @@
           },
           {
             "name": "thiserror",
-            "package_key": "thiserror-2.0.20",
+            "package_key": "thiserror-2.0.21",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -368,7 +368,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "ishou-tokens-0.1.15": {
+      "ishou-tokens-0.1.18": {
         "runtime_dependencies": [
           {
             "name": "irodori",
@@ -528,7 +528,7 @@
         "runtime_dependencies": [
           {
             "name": "cfg_if",
-            "package_key": "cfg-if-1.0.4",
+            "package_key": "cfg-if-1.0.5",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -548,7 +548,7 @@
           },
           {
             "name": "smallvec",
-            "package_key": "smallvec-1.16.0",
+            "package_key": "smallvec-1.16.2",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -569,7 +569,7 @@
         "runtime_dependencies": [
           {
             "name": "unicode_ident",
-            "package_key": "unicode-ident-1.0.24",
+            "package_key": "unicode-ident-1.0.26",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -677,7 +677,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-3.0.4",
+            "package_key": "syn-3.0.6",
             "kind": "normal",
             "features": [
               "clone-impls",
@@ -849,7 +849,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "smallvec-1.16.0": {
+      "smallvec-1.16.2": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -878,7 +878,7 @@
           },
           {
             "name": "unicode_ident",
-            "package_key": "unicode-ident-1.0.24",
+            "package_key": "unicode-ident-1.0.26",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -898,7 +898,7 @@
           "visit-mut"
         ]
       },
-      "syn-3.0.4": {
+      "syn-3.0.6": {
         "runtime_dependencies": [
           {
             "name": "proc_macro2",
@@ -922,7 +922,7 @@
           },
           {
             "name": "unicode_ident",
-            "package_key": "unicode-ident-1.0.24",
+            "package_key": "unicode-ident-1.0.26",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -942,11 +942,11 @@
           "proc-macro"
         ]
       },
-      "thiserror-2.0.20": {
+      "thiserror-2.0.21": {
         "runtime_dependencies": [
           {
             "name": "thiserror_impl",
-            "package_key": "thiserror-impl-2.0.20",
+            "package_key": "thiserror-impl-2.0.21",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -961,7 +961,7 @@
           "std"
         ]
       },
-      "thiserror-impl-2.0.20": {
+      "thiserror-impl-2.0.21": {
         "runtime_dependencies": [
           {
             "name": "proc_macro2",
@@ -985,7 +985,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-3.0.4",
+            "package_key": "syn-3.0.6",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1055,7 +1055,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-3.0.4",
+            "package_key": "syn-3.0.6",
             "kind": "normal",
             "features": [
               "full"
@@ -1173,7 +1173,7 @@
           "std"
         ]
       },
-      "unicode-ident-1.0.24": {
+      "unicode-ident-1.0.26": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -1212,7 +1212,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.13.1",
+                "package_key": "bitflags-2.13.2",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1299,7 +1299,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.13.1",
+                "package_key": "bitflags-2.13.2",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1416,7 +1416,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.13.1",
+                "package_key": "bitflags-2.13.2",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1522,7 +1522,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.13.1",
+                "package_key": "bitflags-2.13.2",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1609,7 +1609,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.13.1",
+                "package_key": "bitflags-2.13.2",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1726,7 +1726,7 @@
             "runtime_dependencies": [
               {
                 "name": "bitflags",
-                "package_key": "bitflags-2.13.1",
+                "package_key": "bitflags-2.13.2",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1832,19 +1832,19 @@
     "awase-0.1.10": {
       "edition": "2024"
     },
-    "bitflags-2.13.1": {
+    "bitflags-2.13.2": {
       "edition": "2021"
     },
-    "cfg-if-1.0.4": {
+    "cfg-if-1.0.5": {
       "edition": "2018"
     },
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.15": {
+    "egaku-0.1.18": {
       "edition": "2024"
     },
-    "egaku-term-0.3.17": {
+    "egaku-term-0.3.18": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
@@ -1857,7 +1857,7 @@
     "irodori-0.1.1": {
       "edition": "2024"
     },
-    "ishou-tokens-0.1.15": {
+    "ishou-tokens-0.1.18": {
       "edition": "2024"
     },
     "itoa-1.0.18": {
@@ -1939,20 +1939,20 @@
     "signal-hook-registry-1.4.8": {
       "edition": "2015"
     },
-    "smallvec-1.16.0": {
+    "smallvec-1.16.2": {
       "edition": "2018"
     },
     "syn-2.0.119": {
       "edition": "2021"
     },
-    "syn-3.0.4": {
+    "syn-3.0.6": {
       "edition": "2021"
     },
-    "thiserror-2.0.20": {
+    "thiserror-2.0.21": {
       "edition": "2021",
       "build_script": "build.rs"
     },
-    "thiserror-impl-2.0.20": {
+    "thiserror-impl-2.0.21": {
       "edition": "2021",
       "proc_macro": true
     },
@@ -1973,7 +1973,7 @@
     "tracing-core-0.1.36": {
       "edition": "2018"
     },
-    "unicode-ident-1.0.24": {
+    "unicode-ident-1.0.26": {
       "edition": "2021"
     },
     "unicode-segmentation-1.13.3": {
