@@ -32,7 +32,7 @@ use crate::cell::{Modifiers, Style};
 /// Apply a whole [`Style`] to the output. `Attribute::Reset` clears attributes
 /// *and* colors, so a `Color::Reset` slot is left as the terminal default
 /// (never emitted explicitly — the live palette shows through).
-fn apply_style<W: Write>(out: &mut W, style: Style) -> std::io::Result<()> {
+pub(crate) fn apply_style<W: Write>(out: &mut W, style: Style) -> std::io::Result<()> {
     out.queue(SetAttribute(Attribute::Reset))?;
     if style.fg != Color::Reset {
         out.queue(SetForegroundColor(style.fg))?;

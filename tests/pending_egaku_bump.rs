@@ -80,7 +80,7 @@ enum Locked {
 fn classify(source: Option<&str>) -> Locked {
     match source {
         None => Locked::PathOverride,
-        Some(s) => match s.split_once("#") {
+        Some(s) => match s.split_once('#') {
             Some((_, rev)) if s.starts_with("git+") && rev == STALE_REV => Locked::StaleGitRev,
             Some((_, rev)) if s.starts_with("git+") => Locked::Bumped(rev.to_string()),
             _ => Locked::Bumped(s.to_string()),

@@ -22,6 +22,8 @@ module_name_repetitions = "allow"
 default = []
 # Pull in tokio + crossterm event-stream for `app::run_async`.
 tokio = ["dep:tokio", "dep:futures-util", "crossterm/event-stream"]
+# mojiban document rows -> terminal styles and an ANSI stream (`markdown`).
+markdown = ["dep:mojiban"]
 
 [dependencies]
 # A plain version requirement, and it must STAY one: crates.io refuses a git
@@ -54,6 +56,7 @@ unicode-width = "0.2"
 unicode-segmentation = "1"
 tokio = { version = "1", features = ["macros", "rt"], optional = true }
 futures-util = { version = "0.3", default-features = false, features = ["std"], optional = true }
+mojiban = { version = "0.1.6", optional = true }
 
 [dev-dependencies]
 serde_json = "1"

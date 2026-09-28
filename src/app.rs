@@ -106,6 +106,7 @@ impl EventPump {
     }
 
     /// Queue a key press. The ergonomic form of [`EventPump::inject`].
+    #[must_use]
     pub fn inject_key(&self, code: KeyCode, modifiers: KeyModifiers) -> bool {
         self.inject(Event::Key(KeyEvent {
             code,
@@ -123,6 +124,7 @@ impl EventPump {
     ///
     /// Returns the number of characters actually queued, which is `text.chars().count()`
     /// unless the queue filled — so a caller can compare and notice.
+    #[must_use]
     pub fn inject_text(&self, text: &str) -> usize {
         text.chars()
             .take_while(|c| self.inject_key(KeyCode::Char(*c), KeyModifiers::NONE))
@@ -155,7 +157,6 @@ impl EventPump {
             .pop_front()
     }
 }
-
 
 /// Drives a terminal application via egaku state machines.
 ///
@@ -259,15 +260,6 @@ pub trait App {
         None
     }
 
-    /// Optional: a printable character that no binding claimed.
-    ///
-    /// **Only fires on the typed path** (when [`Self::hotkey_map`] returns
-    /// `Some`). Apps on the string path keep receiving character events
-    /// through [`Self::on_unhandled`] exactly as before — routing them here
-    /// too would change behaviour under existing implementations, which this
-    /// addition must not do.
-    ///
-
     /// What to do with a key **no binding claimed**, on the typed path.
     ///
     /// Defaulted to [`Unclaimed::Text`], which is exactly the behaviour every
@@ -281,6 +273,14 @@ pub trait App {
         Unclaimed::Text
     }
 
+    /// Optional: a printable character that no binding claimed.
+    ///
+    /// **Only fires on the typed path** (when [`Self::hotkey_map`] returns
+    /// `Some`). Apps on the string path keep receiving character events
+    /// through [`Self::on_unhandled`] exactly as before — routing them here
+    /// too would change behaviour under existing implementations, which this
+    /// addition must not do.
+    ///
     /// This is the hook that makes a text field possible without the keymap
     /// swallowing its letters: a search mode binds only Escape/Return/
     /// Backspace, and every other key misses and lands here.
@@ -819,7 +819,7 @@ mod tick_tests {
         fn keymap(&self) -> &KeyMap<()> {
             unreachable!("not driven in this test")
         }
-        fn handle(&mut self, _: &()) {}
+        fn handle(&mut self, (): &()) {}
         fn draw(&self, _: &mut Buffer) -> Result<()> {
             Ok(())
         }
@@ -857,7 +857,7 @@ mod tick_tests {
         fn keymap(&self) -> &KeyMap<()> {
             unreachable!()
         }
-        fn handle(&mut self, _: &()) {}
+        fn handle(&mut self, (): &()) {}
         fn draw(&self, _: &mut Buffer) -> Result<()> {
             Ok(())
         }
@@ -928,7 +928,11 @@ mod pump_tests {
             !p.inject_key(KeyCode::Char('c'), KeyModifiers::NONE),
             "the third must be refused, not silently dropped"
         );
-        assert_eq!(p.dropped(), 1, "refusals are counted so a caller can assert");
+        assert_eq!(
+            p.dropped(),
+            1,
+            "refusals are counted so a caller can assert"
+        );
         assert_eq!(p.pending(), 2);
     }
 
@@ -947,11 +951,15 @@ mod pump_tests {
         let p = EventPump::new();
         let q = p.clone();
         std::thread::spawn(move || {
-            q.inject_text("hi");
+            assert_eq!(q.inject_text("hi"), 2);
         })
         .join()
         .unwrap();
-        assert_eq!(p.pending(), 2, "a pump must be usable from the thread that drives it");
+        assert_eq!(
+            p.pending(),
+            2,
+            "a pump must be usable from the thread that drives it"
+        );
     }
 
     struct Bare2;
@@ -960,7 +968,7 @@ mod pump_tests {
         fn keymap(&self) -> &KeyMap<()> {
             unreachable!()
         }
-        fn handle(&mut self, _: &()) {}
+        fn handle(&mut self, (): &()) {}
         fn draw(&self, _: &mut Buffer) -> Result<()> {
             Ok(())
         }

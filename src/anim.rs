@@ -32,7 +32,11 @@ pub fn progress(elapsed: Duration, duration: Duration, curve: Curve) -> f32 {
 /// a reveal lasting `duration`. Never zero once started with work to show,
 /// and exactly `total` at the end.
 #[must_use]
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 pub fn reveal_count(total: usize, elapsed: Duration, duration: Duration, curve: Curve) -> usize {
     if total == 0 {
         return 0;
@@ -67,7 +71,11 @@ pub fn shimmer(col: usize, width: usize, elapsed: Duration, period: Duration) ->
     let phase = (elapsed.as_secs_f32() / period.as_secs_f32()).fract();
     let centre = -half + phase * (w + 2.0 * half);
     let d = ((col as f32 + 0.5) - centre).abs() / half;
-    if d >= 1.0 { 0.0 } else { 0.5 + 0.5 * (d * std::f32::consts::PI).cos() }
+    if d >= 1.0 {
+        0.0
+    } else {
+        0.5 + 0.5 * (d * std::f32::consts::PI).cos()
+    }
 }
 
 /// A busy indicator's frame set.
@@ -127,7 +135,10 @@ impl FramePacer {
     #[must_use]
     pub fn new(fps: u32) -> Self {
         let fps = fps.clamp(1, 240);
-        Self { interval: Duration::from_secs(1) / fps, last: None }
+        Self {
+            interval: Duration::from_secs(1) / fps,
+            last: None,
+        }
     }
 
     /// The frame interval.
@@ -139,7 +150,8 @@ impl FramePacer {
     /// Whether a frame may be drawn at `now`.
     #[must_use]
     pub fn due(&self, now: Instant) -> bool {
-        self.last.is_none_or(|l| now.saturating_duration_since(l) >= self.interval)
+        self.last
+            .is_none_or(|l| now.saturating_duration_since(l) >= self.interval)
     }
 
     /// Record that a frame was drawn at `now`.
@@ -154,7 +166,10 @@ impl FramePacer {
         if !animating {
             return idle;
         }
-        self.last.map_or(Duration::ZERO, |l| self.interval.saturating_sub(now.saturating_duration_since(l)))
+        self.last.map_or(Duration::ZERO, |l| {
+            self.interval
+                .saturating_sub(now.saturating_duration_since(l))
+        })
     }
 }
 
@@ -170,14 +185,19 @@ mod tests {
         assert!((progress(MS(0), MS(200), c)).abs() < 1e-6);
         assert!((progress(MS(200), MS(200), c) - 1.0).abs() < 1e-6);
         assert!((progress(MS(999), MS(200), c) - 1.0).abs() < 1e-6);
-        assert!(progress(MS(100), MS(200), c) > 0.5, "decelerate front-loads");
+        assert!(
+            progress(MS(100), MS(200), c) > 0.5,
+            "decelerate front-loads"
+        );
         assert!((progress(MS(5), Duration::ZERO, c) - 1.0).abs() < 1e-6);
     }
 
     #[test]
     fn reveal_grows_monotonically_to_total() {
         let c = Curve::Linear;
-        let counts: Vec<usize> = (0..=10).map(|i| reveal_count(40, MS(i * 20), MS(200), c)).collect();
+        let counts: Vec<usize> = (0..=10)
+            .map(|i| reveal_count(40, MS(i * 20), MS(200), c))
+            .collect();
         assert_eq!(counts[0], 1);
         assert_eq!(counts[10], 40);
         assert!(counts.windows(2).all(|w| w[0] <= w[1]));
@@ -196,10 +216,17 @@ mod tests {
     #[test]
     fn shimmer_sweeps_left_to_right() {
         let per = MS(2000);
-        let peak = |t: u64| (0..40).max_by(|a, b| shimmer(*a, 40, MS(t), per).total_cmp(&shimmer(*b, 40, MS(t), per))).unwrap();
+        let peak = |t: u64| {
+            (0..40)
+                .max_by(|a, b| shimmer(*a, 40, MS(t), per).total_cmp(&shimmer(*b, 40, MS(t), per)))
+                .unwrap()
+        };
         assert!(peak(500) < peak(1000) && peak(1000) < peak(1500));
         assert!((0..40).all(|c| (0.0..=1.0).contains(&shimmer(c, 40, MS(700), per))));
-        assert!((0..40).all(|c| shimmer(c, 40, MS(0), per) < 0.01), "the band starts off-screen");
+        assert!(
+            (0..40).all(|c| shimmer(c, 40, MS(0), per) < 0.01),
+            "the band starts off-screen"
+        );
     }
 
     #[test]
