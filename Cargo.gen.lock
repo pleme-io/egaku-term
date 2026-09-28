@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "7aeec1ae7c144e57d7a02f5c7eb23a93e278bae62895a5bec0653e52fe0a5ae2",
+  "cargo_lock_sha256": "5850b3e23d87e9e8f60ea43b73b9dd17c86457af44fe498bae8121a68928b16c",
   "manifest_sha256": {
-    "Cargo.toml": "bbeae5804d086c27bc672b04f3734a0eef56ef7a3403c4d02ec5a41388e166c6"
+    "Cargo.toml": "42a327d2d82c73b2e215c720d74f56b17546126c99cfb8bbdf8515be2bd35662"
   },
   "target_resolves": {
     "base": {
@@ -135,7 +135,7 @@
           "windows"
         ]
       },
-      "egaku-0.1.18": {
+      "egaku-0.1.20": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -200,6 +200,16 @@
             "tree": "target"
           },
           {
+            "name": "unicode_linebreak",
+            "package_key": "unicode-linebreak-0.1.5",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
             "name": "unicode_segmentation",
             "package_key": "unicode-segmentation-1.13.3",
             "kind": "normal",
@@ -233,7 +243,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.18": {
+      "egaku-term-0.3.19": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -257,7 +267,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.18",
+            "package_key": "egaku-0.1.20",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1188,6 +1198,11 @@
         "build_dependencies": [],
         "features": []
       },
+      "unicode-linebreak-0.1.5": {
+        "runtime_dependencies": [],
+        "build_dependencies": [],
+        "features": []
+      },
       "unicode-segmentation-1.13.3": {
         "runtime_dependencies": [],
         "build_dependencies": [],
@@ -1851,10 +1866,10 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.18": {
+    "egaku-0.1.20": {
       "edition": "2024"
     },
-    "egaku-term-0.3.18": {
+    "egaku-term-0.3.19": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
@@ -1984,6 +1999,9 @@
       "edition": "2018"
     },
     "unicode-ident-1.0.26": {
+      "edition": "2021"
+    },
+    "unicode-linebreak-0.1.5": {
       "edition": "2021"
     },
     "unicode-segmentation-1.13.3": {

@@ -53,9 +53,9 @@ dependencies = [
 
 [[package]]
 name = "egaku"
-version = "0.1.18"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d85228e7838666eb992bf7d90dc316fd125149a93a4fec9998ce40c1c2e2764f"
+checksum = "639f2f24a5defff5725c82cff034690e23409f53228faf2bd11904d4a0428137"
 dependencies = [
  "awase",
  "ishou-tokens",
@@ -63,6 +63,7 @@ dependencies = [
  "shibori",
  "thiserror",
  "tracing",
+ "unicode-linebreak",
  "unicode-segmentation",
  "unicode-width",
  "zeroize",
@@ -70,7 +71,7 @@ dependencies = [
 
 [[package]]
 name = "egaku-term"
-version = "0.3.18"
+version = "0.3.19"
 dependencies = [
  "awase",
  "crossterm",
@@ -462,6 +463,12 @@ name = "unicode-ident"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
+
+[[package]]
+name = "unicode-linebreak"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b09c83c3c29d37506a3e260c08c03743a6bb66a9cd432c6934ab501a190571f"
 
 [[package]]
 name = "unicode-segmentation"
