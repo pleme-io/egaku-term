@@ -837,57 +837,29 @@ pub fn wrap_text(text: &str, width: u16) -> Vec<String> {
     if width == 0 {
         return Vec::new();
     }
-    let max = usize::from(width);
-    let mut out = Vec::new();
-    for raw_line in text.split('\n') {
-        if raw_line.is_empty() {
-            out.push(String::new());
-            continue;
-        }
-        let mut current = String::new();
-        let mut cur_w = 0usize;
-        for word in raw_line.split_whitespace() {
-            let w = word.width();
-            if w > max {
-                // Word longer than the line — flush current, then break the
-                // word at column boundaries.
-                if !current.is_empty() {
-                    out.push(std::mem::take(&mut current));
-                    cur_w = 0;
-                }
-                let mut chunk = String::new();
-                let mut chunk_w = 0usize;
-                for ch in word.chars() {
-                    let cw = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-                    if chunk_w + cw > max && !chunk.is_empty() {
-                        out.push(std::mem::take(&mut chunk));
-                        chunk_w = 0;
-                    }
-                    chunk.push(ch);
-                    chunk_w += cw;
-                }
-                if !chunk.is_empty() {
-                    out.push(chunk);
-                }
-                continue;
+    // One word-wrap implementation for the fleet: egaku's UAX #14
+    // `Wrap::Word` (hard-breaks a word wider than the row). Each source line
+    // has its whitespace runs collapsed first, which is this function's
+    // documented shape; rows come back with trailing spaces trimmed.
+    let normalized: Vec<Vec<egaku::Span>> = text
+        .split('\n')
+        .map(|l| {
+            let joined = l.split_whitespace().collect::<Vec<_>>().join(" ");
+            if joined.is_empty() {
+                Vec::new()
+            } else {
+                vec![egaku::Span::plain(joined)]
             }
-            let needed = if current.is_empty() { w } else { cur_w + 1 + w };
-            if needed > max {
-                out.push(std::mem::take(&mut current));
-                cur_w = 0;
-            }
-            if !current.is_empty() {
-                current.push(' ');
-                cur_w += 1;
-            }
-            current.push_str(word);
-            cur_w += w;
-        }
-        if !current.is_empty() || raw_line.chars().all(char::is_whitespace) {
-            out.push(current);
-        }
-    }
-    out
+        })
+        .collect();
+    let mut view = egaku::TextView::new();
+    view.set_wrap(egaku::Wrap::Word);
+    view.set_width(usize::from(width));
+    view.set_lines(normalized);
+    view.wrapped()
+        .iter()
+        .map(|row| row.text().trim_end().to_owned())
+        .collect()
 }
 
 /// Render a multi-line paragraph inside `rect`, word-wrapped to the rect
@@ -1384,6 +1356,24 @@ mod tests {
                 "second line".to_string()
             ]
         );
+    }
+
+    #[test]
+    fn wrap_text_matches_egaku_word_wrap() {
+        let text = "prose that should   break only at spaces, never mid-word";
+        let mut v = egaku::TextView::new();
+        v.set_wrap(egaku::Wrap::Word);
+        v.set_width(12);
+        v.set_lines(vec![vec![egaku::Span::plain(
+            text.split_whitespace().collect::<Vec<_>>().join(" "),
+        )]]);
+        let expected: Vec<String> = v
+            .wrapped()
+            .iter()
+            .map(|r| r.text().trim_end().to_owned())
+            .collect();
+        assert_eq!(wrap_text(text, 12), expected);
+        assert!(wrap_text(text, 12).iter().all(|l| l.width() <= 12));
     }
 
     #[test]

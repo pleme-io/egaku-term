@@ -291,16 +291,19 @@ mod tests {
             &self.keys
         }
 
-        async fn handle(&mut self, a: &Act) -> Result<()> {
+        fn handle(&mut self, a: &Act) -> impl std::future::Future<Output = Result<()>> + Send {
             match a {
                 Act::Bump => self.count += 1,
                 Act::Quit => self.done = true,
             }
-            Ok(())
+            std::future::ready(Ok(()))
         }
 
-        async fn draw(&self, _frame: &mut Buffer) -> Result<()> {
-            Ok(())
+        fn draw(
+            &self,
+            _frame: &mut Buffer,
+        ) -> impl std::future::Future<Output = Result<()>> + Send {
+            std::future::ready(Ok(()))
         }
 
         fn should_quit(&self) -> bool {

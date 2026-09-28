@@ -32,13 +32,13 @@ impl AsyncApp for WakeApp {
     }
 
     fn handle(&mut self, _a: &()) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+        std::future::ready(Ok(()))
     }
 
     fn draw(&self, f: &mut Buffer) -> impl std::future::Future<Output = Result<()>> + Send {
         self.draws.fetch_add(1, Ordering::SeqCst);
         f.set_string(0, 0, &self.label, egaku_term::Style::default());
-        async { Ok(()) }
+        std::future::ready(Ok(()))
     }
 
     fn wake(&self) -> impl std::future::Future<Output = ()> + Send {
@@ -53,7 +53,7 @@ impl AsyncApp for WakeApp {
         // The `&mut self` half — reads what the signal delivered and writes it
         // into the state `draw` renders.
         self.label = format!("tick {}", *self.rx.borrow_and_update());
-        async { Ok(()) }
+        std::future::ready(Ok(()))
     }
 
     fn should_quit(&self) -> bool {
@@ -140,10 +140,10 @@ impl AsyncApp for InputOnlyApp {
         &self.keymap
     }
     fn handle(&mut self, _a: &()) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+        std::future::ready(Ok(()))
     }
     fn draw(&self, _f: &mut Buffer) -> impl std::future::Future<Output = Result<()>> + Send {
-        async { Ok(()) }
+        std::future::ready(Ok(()))
     }
     fn should_quit(&self) -> bool {
         true
