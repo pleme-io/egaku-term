@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "63678e23fe101e01951e68ee6ac7ba71344be40bf5119405f1785097c68ad321",
+  "cargo_lock_sha256": "7aeec1ae7c144e57d7a02f5c7eb23a93e278bae62895a5bec0653e52fe0a5ae2",
   "manifest_sha256": {
-    "Cargo.toml": "1c91d40c140d298bdac7e15983fa4c2af51e24377c39c46d8ad2201746afe0e7"
+    "Cargo.toml": "bbeae5804d086c27bc672b04f3734a0eef56ef7a3403c4d02ec5a41388e166c6"
   },
   "target_resolves": {
     "base": {
@@ -258,6 +258,16 @@
           {
             "name": "egaku",
             "package_key": "egaku-0.1.18",
+            "kind": "normal",
+            "features": [],
+            "uses_default_features": true,
+            "optional": false,
+            "target": null,
+            "tree": "target"
+          },
+          {
+            "name": "ishou_tokens",
+            "package_key": "ishou-tokens-0.1.18",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,

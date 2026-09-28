@@ -76,6 +76,7 @@ dependencies = [
  "crossterm",
  "egaku",
  "futures-util",
+ "ishou-tokens",
  "serde_json",
  "thiserror",
  "tokio",

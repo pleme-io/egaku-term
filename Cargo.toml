@@ -44,6 +44,10 @@ egaku = "0.1.14"
 # know both sides. awase's deps are a strict subset of egaku's, so this
 # edge adds no transitive crate.
 awase = "0.1"
+# The fleet design tokens: FleetTheme for Palette::from_fleet, and the
+# motion algebra (curves, tweens) that `anim` builds terminal motion on.
+# egaku already depends on it, so this adds no crate to the graph.
+ishou-tokens = "0.1.18"
 crossterm = "0.28"
 thiserror = "2"
 unicode-width = "0.2"

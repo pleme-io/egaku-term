@@ -74,6 +74,7 @@ mod backend;
 mod buffer;
 mod cell;
 
+pub mod anim;
 pub mod app;
 pub mod draw;
 pub mod error;
