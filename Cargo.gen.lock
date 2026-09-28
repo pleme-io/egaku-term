@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "b8cca1bf4110ba37045ef619b886b603cf519045bf5e2e873a0ce43f30a1e598",
+  "cargo_lock_sha256": "94d1ce6cbe3a62879ba203d27088fc7b72b6f3d075ef3054a2b5252f34222750",
   "manifest_sha256": {
-    "Cargo.toml": "fb02c8a86d78f48d97facc5845c44ec0fa30991389acc37e97eab55419402517"
+    "Cargo.toml": "231cb4b7c62c9415c16b1011c004ffcc9f1a85e55742012fb27ea42281c6dcc1"
   },
   "target_resolves": {
     "base": {
@@ -135,7 +135,7 @@
           "windows"
         ]
       },
-      "egaku-0.1.20": {
+      "egaku-0.1.22": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -243,7 +243,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.19": {
+      "egaku-term-0.3.20": {
         "runtime_dependencies": [
           {
             "name": "awase",
@@ -267,7 +267,7 @@
           },
           {
             "name": "egaku",
-            "package_key": "egaku-0.1.20",
+            "package_key": "egaku-0.1.22",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1866,10 +1866,10 @@
     "crossterm-0.28.1": {
       "edition": "2021"
     },
-    "egaku-0.1.20": {
+    "egaku-0.1.22": {
       "edition": "2024"
     },
-    "egaku-term-0.3.19": {
+    "egaku-term-0.3.20": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
