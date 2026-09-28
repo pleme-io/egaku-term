@@ -80,7 +80,7 @@ dependencies = [
 
 [[package]]
 name = "egaku-term"
-version = "0.3.20"
+version = "0.3.21"
 dependencies = [
  "awase",
  "crossterm",
@@ -212,9 +212,9 @@ dependencies = [
 
 [[package]]
 name = "mojiban"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "737c971d5e04e93bbfa7c6cad6e824594ca4f3e888d0115a05cd8f8bf9b0b677"
+checksum = "9ac5162c5319c66cd6ff21614be952b677f97caa8928ba41445664e79c8d8246"
 dependencies = [
  "egaku",
  "pulldown-cmark",
