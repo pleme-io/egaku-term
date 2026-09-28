@@ -61,7 +61,9 @@ not try.
 | `terminal`   | `Terminal::enter()` + Drop-safe restore                                              |
 | `event`      | `from_crossterm(Event) -> Option<KeyCombo>`, `key!` macro                            |
 | `keymap`     | `keymap!` declarative macro                                                          |
-| `theme`      | `Palette::from_theme(&egaku::Theme)` — RGBA → crossterm `Color`                      |
+| `theme`      | `Palette::from_theme(&egaku::Theme)` — RGBA → crossterm `Color`; `Palette::from_fleet(FleetTheme)` / `from_resolved` — the one fleet-theme → terminal projection (banken's ramp uses it); `ColorDepth` + `for_depth` for 256-colour terminals |
+| `anim`       | terminal motion over `ishou_tokens::motion`: `Spinner` (Braille/Breath/Line frames), `pulse`, `shimmer`, `reveal_count`, frame pacer. Use these rather than a local frame table |
+| `markdown` (feature `markdown`) | mojiban rows onto the terminal: `role_style(&CellStyle, &Palette)`, `styles`, `write_ansi` (mill docs). The role → palette map lives here once |
 | `draw`       | the `Draw` trait + `header` / `list` / `table` / `text_input` / `tabs` / `modal` / `scrollbar` / `split` / `paragraph` / `bordered_block` / `status_line` |
 | `app`        | sync `App` trait + `run()` runtime                                                   |
 | `app_async` (feature `tokio`) | async `AsyncApp` trait + `run_async()` over `crossterm::EventStream` |
