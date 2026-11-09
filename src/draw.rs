@@ -1407,7 +1407,7 @@ mod tests {
         input
     }
 
-    /// theory/MUKAE.md M5's done-predicate, executable: N typed characters
+    /// mukae M5's done-predicate, executable: N typed characters
     /// render N mask cells, and the rendered buffer carries none of them.
     #[test]
     fn eight_typed_characters_render_eight_mask_cells_and_leak_nothing() {
