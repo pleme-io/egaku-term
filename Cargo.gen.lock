@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "a4a2c4b9c1f13f197b25c19979f2aab24c95256a760bea20fc5a3dd554e7901b",
+  "cargo_lock_sha256": "cacc3d65744072cf5ffb8c5888c49dc2999ed4e0ee563896a07469d7fd041037",
   "manifest_sha256": {
-    "Cargo.toml": "46ca404ad3170c8b5cd6ba71a094bf5fb01547c0137769010e8f5758ad165fcc"
+    "Cargo.toml": "009c26739cd57d8c395b877d524fa711e9a437e632d7e68733e86507e6e56cb1"
   },
   "target_resolves": {
     "base": {
-      "awase-0.1.10": {
+      "awase-0.1.11": {
         "runtime_dependencies": [
           {
             "name": "serde",
@@ -70,7 +70,7 @@
           },
           {
             "name": "mio",
-            "package_key": "mio-1.2.3",
+            "package_key": "mio-1.2.4",
             "kind": "normal",
             "features": [
               "os-poll"
@@ -139,7 +139,7 @@
         "runtime_dependencies": [
           {
             "name": "awase",
-            "package_key": "awase-0.1.10",
+            "package_key": "awase-0.1.11",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -149,7 +149,7 @@
           },
           {
             "name": "ishou_tokens",
-            "package_key": "ishou-tokens-0.1.18",
+            "package_key": "ishou-tokens-0.1.24",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -221,7 +221,7 @@
           },
           {
             "name": "unicode_width",
-            "package_key": "unicode-width-0.2.2",
+            "package_key": "unicode-width-0.2.3",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -231,7 +231,7 @@
           },
           {
             "name": "zeroize",
-            "package_key": "zeroize-1.9.0",
+            "package_key": "zeroize-1.9.1",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -243,11 +243,11 @@
         "build_dependencies": [],
         "features": []
       },
-      "egaku-term-0.3.21": {
+      "egaku-term-0.3.22": {
         "runtime_dependencies": [
           {
             "name": "awase",
-            "package_key": "awase-0.1.10",
+            "package_key": "awase-0.1.11",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -277,7 +277,7 @@
           },
           {
             "name": "ishou_tokens",
-            "package_key": "ishou-tokens-0.1.18",
+            "package_key": "ishou-tokens-0.1.24",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -307,7 +307,7 @@
           },
           {
             "name": "unicode_width",
-            "package_key": "unicode-width-0.2.2",
+            "package_key": "unicode-width-0.2.3",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -325,7 +325,7 @@
         "runtime_dependencies": [
           {
             "name": "libc",
-            "package_key": "libc-0.2.189",
+            "package_key": "libc-0.2.191",
             "kind": "normal",
             "features": [],
             "uses_default_features": false,
@@ -335,7 +335,7 @@
           },
           {
             "name": "libc",
-            "package_key": "libc-0.2.189",
+            "package_key": "libc-0.2.191",
             "kind": "normal",
             "features": [],
             "uses_default_features": false,
@@ -345,7 +345,7 @@
           },
           {
             "name": "libc",
-            "package_key": "libc-0.2.189",
+            "package_key": "libc-0.2.191",
             "kind": "normal",
             "features": [],
             "uses_default_features": false,
@@ -388,7 +388,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "ishou-tokens-0.1.18": {
+      "ishou-tokens-0.1.24": {
         "runtime_dependencies": [
           {
             "name": "irodori",
@@ -414,7 +414,7 @@
           },
           {
             "name": "serde_json",
-            "package_key": "serde_json-1.0.151",
+            "package_key": "serde_json-1.0.154",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -428,12 +428,12 @@
           "default"
         ]
       },
-      "itoa-1.0.18": {
+      "itoa-1.0.19": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
       },
-      "libc-0.2.189": {
+      "libc-0.2.191": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": [
@@ -461,7 +461,7 @@
           "default"
         ]
       },
-      "log-0.4.34": {
+      "log-0.4.35": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -474,11 +474,11 @@
           "std"
         ]
       },
-      "mio-1.2.3": {
+      "mio-1.2.4": {
         "runtime_dependencies": [
           {
             "name": "libc",
-            "package_key": "libc-0.2.189",
+            "package_key": "libc-0.2.191",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -488,7 +488,7 @@
           },
           {
             "name": "log",
-            "package_key": "log-0.4.34",
+            "package_key": "log-0.4.35",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -558,7 +558,7 @@
           },
           {
             "name": "libc",
-            "package_key": "libc-0.2.189",
+            "package_key": "libc-0.2.191",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -568,7 +568,7 @@
           },
           {
             "name": "smallvec",
-            "package_key": "smallvec-1.16.2",
+            "package_key": "smallvec-1.16.5",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -589,7 +589,7 @@
         "runtime_dependencies": [
           {
             "name": "unicode_ident",
-            "package_key": "unicode-ident-1.0.26",
+            "package_key": "unicode-ident-1.0.27",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -697,7 +697,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-3.0.6",
+            "package_key": "syn-3.0.10",
             "kind": "normal",
             "features": [
               "clone-impls",
@@ -717,11 +717,11 @@
           "default"
         ]
       },
-      "serde_json-1.0.151": {
+      "serde_json-1.0.154": {
         "runtime_dependencies": [
           {
             "name": "itoa",
-            "package_key": "itoa-1.0.18",
+            "package_key": "itoa-1.0.19",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -775,7 +775,7 @@
         "runtime_dependencies": [
           {
             "name": "libc",
-            "package_key": "libc-0.2.189",
+            "package_key": "libc-0.2.191",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -805,7 +805,7 @@
         "runtime_dependencies": [
           {
             "name": "libc",
-            "package_key": "libc-0.2.189",
+            "package_key": "libc-0.2.191",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -815,7 +815,7 @@
           },
           {
             "name": "mio_1_0",
-            "package_key": "mio-1.2.3",
+            "package_key": "mio-1.2.4",
             "kind": "normal",
             "features": [
               "net",
@@ -857,7 +857,7 @@
           },
           {
             "name": "libc",
-            "package_key": "libc-0.2.189",
+            "package_key": "libc-0.2.191",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -869,7 +869,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "smallvec-1.16.2": {
+      "smallvec-1.16.5": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -898,7 +898,7 @@
           },
           {
             "name": "unicode_ident",
-            "package_key": "unicode-ident-1.0.26",
+            "package_key": "unicode-ident-1.0.27",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -918,7 +918,7 @@
           "visit-mut"
         ]
       },
-      "syn-3.0.6": {
+      "syn-3.0.10": {
         "runtime_dependencies": [
           {
             "name": "proc_macro2",
@@ -942,7 +942,7 @@
           },
           {
             "name": "unicode_ident",
-            "package_key": "unicode-ident-1.0.26",
+            "package_key": "unicode-ident-1.0.27",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1005,7 +1005,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-3.0.6",
+            "package_key": "syn-3.0.10",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -1017,7 +1017,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "tokio-1.53.1": {
+      "tokio-1.54.1": {
         "runtime_dependencies": [
           {
             "name": "pin_project_lite",
@@ -1075,7 +1075,7 @@
           },
           {
             "name": "syn",
-            "package_key": "syn-3.0.6",
+            "package_key": "syn-3.0.10",
             "kind": "normal",
             "features": [
               "full"
@@ -1193,7 +1193,7 @@
           "std"
         ]
       },
-      "unicode-ident-1.0.26": {
+      "unicode-ident-1.0.27": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": []
@@ -1208,7 +1208,7 @@
         "build_dependencies": [],
         "features": []
       },
-      "unicode-width-0.2.2": {
+      "unicode-width-0.2.3": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": [
@@ -1216,7 +1216,7 @@
           "default"
         ]
       },
-      "zeroize-1.9.0": {
+      "zeroize-1.9.1": {
         "runtime_dependencies": [],
         "build_dependencies": [],
         "features": [
@@ -1277,7 +1277,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1287,7 +1287,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1364,7 +1364,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1374,7 +1374,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1481,7 +1481,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1491,7 +1491,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1587,7 +1587,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1597,7 +1597,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1674,7 +1674,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1684,7 +1684,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1791,7 +1791,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1801,7 +1801,7 @@
               },
               {
                 "name": "libc",
-                "package_key": "libc-0.2.189",
+                "package_key": "libc-0.2.191",
                 "kind": "normal",
                 "features": [],
                 "uses_default_features": false,
@@ -1854,7 +1854,7 @@
     }
   },
   "per_crate": {
-    "awase-0.1.10": {
+    "awase-0.1.11": {
       "edition": "2024"
     },
     "bitflags-2.13.2": {
@@ -1869,7 +1869,7 @@
     "egaku-0.1.22": {
       "edition": "2024"
     },
-    "egaku-term-0.3.21": {
+    "egaku-term-0.3.22": {
       "edition": "2024",
       "lib_target": {
         "name": "egaku_term",
@@ -1882,13 +1882,13 @@
     "irodori-0.1.1": {
       "edition": "2024"
     },
-    "ishou-tokens-0.1.18": {
+    "ishou-tokens-0.1.24": {
       "edition": "2024"
     },
-    "itoa-1.0.18": {
+    "itoa-1.0.19": {
       "edition": "2021"
     },
-    "libc-0.2.189": {
+    "libc-0.2.191": {
       "edition": "2021",
       "build_script": "build.rs"
     },
@@ -1898,13 +1898,13 @@
     "lock_api-0.4.14": {
       "edition": "2021"
     },
-    "log-0.4.34": {
+    "log-0.4.35": {
       "edition": "2021"
     },
     "memchr-2.8.3": {
       "edition": "2021"
     },
-    "mio-1.2.3": {
+    "mio-1.2.4": {
       "edition": "2021"
     },
     "once_cell-1.21.4": {
@@ -1947,7 +1947,7 @@
       "edition": "2021",
       "proc_macro": true
     },
-    "serde_json-1.0.151": {
+    "serde_json-1.0.154": {
       "edition": "2021",
       "build_script": "build.rs"
     },
@@ -1964,13 +1964,13 @@
     "signal-hook-registry-1.4.8": {
       "edition": "2015"
     },
-    "smallvec-1.16.2": {
+    "smallvec-1.16.5": {
       "edition": "2018"
     },
     "syn-2.0.119": {
       "edition": "2021"
     },
-    "syn-3.0.6": {
+    "syn-3.0.10": {
       "edition": "2021"
     },
     "thiserror-2.0.21": {
@@ -1981,7 +1981,7 @@
       "edition": "2021",
       "proc_macro": true
     },
-    "tokio-1.53.1": {
+    "tokio-1.54.1": {
       "edition": "2021"
     },
     "tokio-macros-2.7.2": {
@@ -1998,7 +1998,7 @@
     "tracing-core-0.1.36": {
       "edition": "2018"
     },
-    "unicode-ident-1.0.26": {
+    "unicode-ident-1.0.27": {
       "edition": "2021"
     },
     "unicode-linebreak-0.1.5": {
@@ -2007,10 +2007,10 @@
     "unicode-segmentation-1.13.3": {
       "edition": "2018"
     },
-    "unicode-width-0.2.2": {
+    "unicode-width-0.2.3": {
       "edition": "2021"
     },
-    "zeroize-1.9.0": {
+    "zeroize-1.9.1": {
       "edition": "2024"
     },
     "zmij-1.0.23": {
